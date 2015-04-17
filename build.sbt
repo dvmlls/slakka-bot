@@ -8,7 +8,7 @@ libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % "1.12.2" % "test",
   "io.spray" %% "spray-can" % "1.3.3",
   "io.spray" %% "spray-client" % "1.3.3",
-  "io.spray" %%  "spray-json" % "1.3.1",
+  "io.spray" %% "spray-json" % "1.3.1",
   "com.typesafe.akka" %% "akka-actor" % "2.3.9",
   "javax.websocket" % "javax.websocket-api" % "1.1",
   "org.glassfish.tyrus" % "tyrus-client" % "1.10",

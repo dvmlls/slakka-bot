@@ -1,4 +1,5 @@
 import javax.websocket.MessageHandler.Whole
+//import javax.websocket.MessageHandler.Partial
 
 import akka.actor.{ActorRef, ActorLogging, Actor}
 import org.glassfish.tyrus.client.ClientManager
@@ -15,13 +16,19 @@ class WebSocketClient (target:ActorRef) extends Actor with ActorLogging {
     case url:String =>
       log.info(s"connecting to: $url")
       val endpoint = new Endpoint {
-        override def onOpen(session: Session, config: EndpointConfig): Unit = {
+        override def onOpen(session: Session, config: EndpointConfig) {
           session.addMessageHandler(new Whole[String] {
-            override def onMessage(message: String): Unit = {
+            override def onMessage(message: String) {
               log.debug(s"received message: $message")
               target ! message
             }
           })
+//          session.addMessageHandler(new Partial[String] {
+//            override def onMessage(message: String, last:Boolean) {
+//              log.debug(s"received message ${if (last) "fragment" else "ending"}: $message")
+//              target ! message
+//            }
+//          })
           context.become(connected(session))
         }
         override def onClose(session:Session, reason:CloseReason) = { }

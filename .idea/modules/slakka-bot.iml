@@ -48,6 +48,5 @@
     <orderEntry type="library" scope="TEST" name="SBT: org.scalacheck:scalacheck_2.11:1.12.2:jar" level="project" />
     <orderEntry type="library" name="SBT: org.slf4j:slf4j-api:1.7.12:jar" level="project" />
     <orderEntry type="library" name="SBT: org.slf4j:slf4j-simple:1.7.12:jar" level="project" />
-    <orderEntry type="library" name="scala-sdk-2.11.6" level="application" />
   </component>
 </module>
