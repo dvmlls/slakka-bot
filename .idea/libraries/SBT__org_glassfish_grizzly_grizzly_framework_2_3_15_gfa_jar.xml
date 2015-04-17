@@ -1,7 +1,6 @@
 <component name="libraryTable">
-  <library name="SBT: org.glassfish.grizzly:grizzly-framework:2.3.15-gfa">
+  <library name="SBT: org.glassfish.grizzly:grizzly-framework:2.3.15-gfa:jar">
     <CLASSES>
-      <root url="jar://$USER_HOME$/.ivy2/cache/org.glassfish.grizzly/grizzly-framework/jars/grizzly-framework-2.3.15-gfa.jar!/" />
       <root url="jar://$USER_HOME$/.ivy2/cache/org.glassfish.grizzly/grizzly-framework/bundles/grizzly-framework-2.3.15-gfa.jar!/" />
     </CLASSES>
     <JAVADOC>

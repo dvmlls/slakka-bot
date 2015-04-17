@@ -21,14 +21,13 @@ object Listener extends App {
   }
   import RTMStartProtocol._
 
-  // val token = "xoxp-4439240800-4439240824-4462184742-27352d"
-  //
   /*
    * https://my.slack.com/services/new/bot
    * https://api.slack.com/web#authentication
    */
   val slakkaBot = "xoxb-4510753551-jjHnAmRXLjh5j60p5VbbOOBe"
-  val dvmllsBearerToken = "xoxp-4439240800-4439240824-4484187659-3e4c68"
+//  val dvmllsBearerToken = "xoxp-4439240800-4439240824-4484187659-3e4c68"
+//  val oauthToken = "xoxp-4439240800-4439240824-4462184742-27352d"
   val method = "rtm.start"
   val uri = s"https://slack.com/api/$method"
 
