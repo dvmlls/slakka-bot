@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="SBT: org.glassfish.grizzly:grizzly-http-server:2.3.15-gfa">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/org.glassfish.grizzly/grizzly-http-server/bundles/grizzly-http-server-2.3.15-gfa.jar!/" />
+      <root url="jar://$USER_HOME$/.ivy2/cache/org.glassfish.grizzly/grizzly-http-server/jars/grizzly-http-server-2.3.15-gfa.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.ivy2/cache/org.glassfish.grizzly/grizzly-http-server/docs/grizzly-http-server-2.3.15-gfa-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/org.glassfish.grizzly/grizzly-http-server/srcs/grizzly-http-server-2.3.15-gfa-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

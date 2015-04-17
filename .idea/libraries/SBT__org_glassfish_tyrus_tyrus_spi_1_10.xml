@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="SBT: org.glassfish.tyrus:tyrus-spi:1.10">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/org.glassfish.tyrus/tyrus-spi/bundles/tyrus-spi-1.10.jar!/" />
+      <root url="jar://$USER_HOME$/.ivy2/cache/org.glassfish.tyrus/tyrus-spi/jars/tyrus-spi-1.10.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.ivy2/cache/org.glassfish.tyrus/tyrus-spi/docs/tyrus-spi-1.10-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/org.glassfish.tyrus/tyrus-spi/srcs/tyrus-spi-1.10-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
