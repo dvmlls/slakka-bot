@@ -10,17 +10,17 @@ import javax.websocket._
  * http://stackoverflow.com/questions/26452903/javax-websocket-client-simple-example
  * https://tyrus.java.net/documentation/1.10/user-guide.html#d0e78
  */
-class WebSocketClient (target:ActorRef) extends Actor with ActorLogging {
+class WebSocketClient extends Actor with ActorLogging {
 
   def disconnected:Receive = { log.info("disconnected") ; {
-    case url:String =>
-      log.info(s"connecting to: $url")
+    case (server:URI, client:ActorRef) =>
+      log.info(s"connecting to: $server")
       val endpoint = new Endpoint {
         override def onOpen(session: Session, config: EndpointConfig) {
           session.addMessageHandler(new Whole[String] {
             override def onMessage(message: String) {
               log.debug(s"received message: $message")
-              target ! message
+              client ! message
             }
           })
 //          session.addMessageHandler(new Partial[String] {
@@ -35,7 +35,7 @@ class WebSocketClient (target:ActorRef) extends Actor with ActorLogging {
         override def onError(session:Session, error:Throwable) = { }
       }
       val config = ClientEndpointConfig.Builder.create().build()
-      ClientManager.createClient().connectToServer(endpoint, config, new URI(url))
+      ClientManager.createClient().connectToServer(endpoint, config, server)
   }}
 
   def connected(session:Session):Receive = { log.info("connected") ; {
@@ -45,4 +45,18 @@ class WebSocketClient (target:ActorRef) extends Actor with ActorLogging {
   }}
 
   override def receive: Receive = disconnected
+}
+
+import spray.json._
+
+class JSONWrapper extends Actor with ActorLogging {
+
+  def connected(server:ActorRef, client:ActorRef):Receive = {
+    case fromServer:String => client ! fromServer.parseJson
+    case fromClient:JsValue => server ! fromClient.compactPrint
+  }
+
+  override def receive:Receive = {
+    case (server:ActorRef, client:ActorRef) => context.become(connected(server, client))
+  }
 }
