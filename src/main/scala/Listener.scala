@@ -9,7 +9,7 @@ import spray.json.JsValue
 
 /*
  *
- * $ sbt console
+ * $ sbt console 2> ~/bot.log
  * scala> Listener.main(Array("<BOT TOKEN>"))
  *  ...
  *  ... logging ...
@@ -54,7 +54,7 @@ object Listener extends App {
 
     def receive:Receive = {
       case toSlack:String => slackClient ! toSlack
-      case fromSlack:JsValue => println(fromSlack)
+      case fromSlack:JsValue => log.info(fromSlack.toString)
     }
   }
 
