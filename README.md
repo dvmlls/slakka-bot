@@ -14,6 +14,8 @@ $ sbt 'inspect sbtVersion'
 [info] Setting: java.lang.String = 0.13.9
 ```
 
+On OSX: `brew install sbt`
+
 ### IntelliJ
 
 IntelliJ 15 Community: https://www.jetbrains.com/idea/download/ 
@@ -33,4 +35,4 @@ java version "1.8.0_60"
 Java(TM) SE Runtime Environment (build 1.8.0_60-b27)
 ```
 
-To change your default java: http://stackoverflow.com/questions/21964709/how-to-set-or-change-the-default-java-jdk-version-on-os-x
+To change your default java on OSX: http://stackoverflow.com/questions/21964709/how-to-set-or-change-the-default-java-jdk-version-on-os-x
