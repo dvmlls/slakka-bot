@@ -1,9 +1,8 @@
 import java.util.concurrent.TimeUnit
-
 import akka.actor._
 import akka.util.Timeout
-import cat.dvmlls.WebSocketClient
-import cat.dvmlls.slack.web.{Protocol, RTMStart, API}
+import cat.dvmlls.{Unhandler, WebSocketClient}
+import cat.dvmlls.slack.web._
 import java.net.URI
 import akka.pattern.pipe
 
@@ -22,12 +21,6 @@ import akka.pattern.pipe
  * scala> Listener.master ! """{"type":"message","channel":"G06DLTDP0","text":"stfu"}"""
  */
 
-class Unhandler extends Actor with ActorLogging {
-  def receive:Receive = {
-    case UnhandledMessage(msg, sender, recipient) => log.info(s"not handled: $msg")
-  }
-}
-
 object Listener extends App {
   val token = args(0)
 
@@ -37,13 +30,16 @@ object Listener extends App {
 
   import Protocol._
 
+  val blankRequest = API.Request(Map("token" -> token))
   val rtmStart = API.createPipeline[RTMStart]("rtm.start")
+  val channels = API.createPipeline[ChannelList]("channels.list")
+  val users = API.createPipeline[UserList]("users.list")
 
   class Master extends Actor with ActorLogging {
 
     val slackClient = system.actorOf(Props { new WebSocketClient(self) })
 
-    rtmStart(API.Request(Map("token" -> token)))
+    rtmStart(blankRequest)
       .map { case RTMStart(url) => new URI(url) }
       .pipeTo(slackClient)
 
@@ -53,9 +49,7 @@ object Listener extends App {
     }
   }
 
-  val unhandler = system.actorOf(Props[Unhandler])
-
-  system.eventStream.subscribe(unhandler, classOf[UnhandledMessage])
+  system.eventStream.subscribe(system.actorOf(Props[Unhandler]), classOf[UnhandledMessage])
 
   val master = system.actorOf(Props[Master])
 }
