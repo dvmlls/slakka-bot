@@ -1,10 +1,14 @@
-import javax.websocket.MessageHandler.{Partial, Whole}
+package cat.dvmlls
+
+import javax.websocket.MessageHandler.Whole
+
 //import javax.websocket.MessageHandler.Partial
 
-import akka.actor.{PoisonPill, ActorRef, ActorLogging, Actor}
-import org.glassfish.tyrus.client.ClientManager
 import java.net.URI
 import javax.websocket._
+
+import akka.actor.{Actor, ActorLogging, ActorRef}
+import org.glassfish.tyrus.client.ClientManager
 
 /*
  * http://stackoverflow.com/questions/26452903/javax-websocket-client-simple-example

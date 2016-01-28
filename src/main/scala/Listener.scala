@@ -1,16 +1,11 @@
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
-import akka.pattern.pipe
 import akka.util.Timeout
-import spray.http.HttpRequest
-import spray.json.{JsonParser, DefaultJsonProtocol, JsValue}
+import cat.dvmlls.WebSocketClient
+import cat.dvmlls.slack.web.{Protocol, RTMStart, API}
 import java.net.URI
-import akka.pattern.{pipe, ask}
-
-import scala.concurrent.Future
-import spray.httpx.SprayJsonSupport._
-
+import akka.pattern.pipe
 
 /*
  * https://my.slack.com/services/new/bot
@@ -24,7 +19,7 @@ import spray.httpx.SprayJsonSupport._
  *  ...
  *  ... logging ...
  *  ...
- * scala> Listener.master ! """ {"type":"message","channel":"G06DLTDP0","text":"stfu"} """
+ * scala> Listener.master ! """{"type":"message","channel":"G06DLTDP0","text":"stfu"}"""
  */
 
 class Unhandler extends Actor with ActorLogging {
@@ -40,25 +35,16 @@ object Listener extends App {
   implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
   import system.dispatcher
 
-  case class RTMStart(url:String)
-  val rtmStart = {
-    object RTMStartProtocol extends DefaultJsonProtocol {
-      implicit val rtmStartFormat = jsonFormat1(RTMStart)
-    }
-    import RTMStartProtocol._
+  import Protocol._
 
-    SlackWebAPI.createPipeline[RTMStart]("rtm.start", j => j.convertTo[RTMStart])
-  }
+  val rtmStart = API.createPipeline[RTMStart]("rtm.start")
 
   class Master extends Actor with ActorLogging {
 
     val slackClient = system.actorOf(Props { new WebSocketClient(self) })
 
-    rtmStart(SlackWebAPI.Request(Map("token" -> token)))
-      .flatMap {
-        case Right(RTMStart(url)) => Future(new URI(url))
-        case Left(error) => Future.
-      }
+    rtmStart(API.Request(Map("token" -> token)))
+      .map { case RTMStart(url) => new URI(url) }
       .pipeTo(slackClient)
 
     def receive:Receive = {
