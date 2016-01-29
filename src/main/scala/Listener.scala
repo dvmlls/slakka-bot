@@ -1,25 +1,10 @@
 import java.util.concurrent.TimeUnit
 import akka.actor._
 import akka.util.Timeout
-import cat.dvmlls.{Unhandler, WebSocketClient}
+import cat.dvmlls.WebSocketClient
 import cat.dvmlls.slack.web._
 import java.net.URI
 import akka.pattern.pipe
-
-/*
- * https://my.slack.com/services/new/bot
- * https://api.slack.com/web#authentication
- */
-
-/*
- *
- * $ sbt console 2> ~/bot.log
- * scala> Listener.main(Array("<BOT TOKEN>"))
- *  ...
- *  ... logging ...
- *  ...
- * scala> Listener.master ! """{"type":"message","channel":"G06DLTDP0","text":"stfu"}"""
- */
 
 object Listener extends App {
   val token = args(0)
@@ -45,6 +30,7 @@ object Listener extends App {
       ChannelList(channels) <- channels(blankRequest) ;
       UserList(users) <- users(blankRequest)
     ) yield {
+      log.info("found websocket URL, users, and channels")
       Startup(new URI(url),
         channels.map(c => (c.id, c.name)).toMap,
         users.flatMap(u => u.profile.email.map(email => (u.id, email))).toMap)
@@ -58,7 +44,7 @@ object Listener extends App {
 
     def connected(channels:Map[String, String], users:Map[String,String]):Receive = { log.info("connecting"); {
       case toSlack:String => slackClient ! toSlack
-      case WebSocketClient.Received(fromSlack) => log.info(fromSlack)
+      case WebSocketClient.Received(fromSlack) =>
     }}
 
     def receive:Receive = { log.info("disconnected"); {
@@ -67,8 +53,6 @@ object Listener extends App {
         context.become(connected(cs, us))
     }}
   }
-
-  system.eventStream.subscribe(system.actorOf(Props[Unhandler]), classOf[UnhandledMessage])
 
   val master = system.actorOf(Props[Master])
 }

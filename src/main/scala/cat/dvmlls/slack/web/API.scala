@@ -26,6 +26,12 @@ object API {
         val request:HttpRequest = Post(url, FormData(args))
         val response:Future[JsObject] = pipeline(request)
 
+        /*
+         * slack always returns a json object with a boolean 'ok' field
+         *  - if false: they'll populate the 'error' field
+         *  - if true: the object will have the data i want
+         */
+
         response.flatMap(json => json.convertTo[Ok] match {
           case Ok(ok, Some(msg)) => Future.failed(new Exception(msg))
           case Ok(ok, None) => Future(json.convertTo[T])
