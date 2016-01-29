@@ -55,28 +55,34 @@ You can review your tokens here: https://api.slack.com/web#authentication
 
 ## Run a Basic Bot
 
-The one bit of config I added tells the bot to log to `stderr` instead of `stdout` - this allows me to interact with it from the command line.
+I added some config to tell the bot to log to `stderr` instead of `stdout`, allowing me to fiddle with it from the command line.
 
 I'm going to use two terminals: one to interact with the bot, and the other to watch the logs.
 
 In one terminal:
 ```
-$ sbt console 2>>~/bot.log
-scala> Listener.main(Array("YOUR SLACK TOKEN"))
+$ export SLACK_TOKEN="[your slack token]"
+$ sbt 2>>~/bot.log
+[info] Set current project to slakka-bot (in build file:/Users/dmills/src/slakka-bot/)
+> console 
+[info] Starting scala interpreter...
+scala> Bot.main(null)
 scala> 
 ```
 
 In another terminal:
 ```
 $ tail -f ~/bot.log
-[default-akka.actor.default-dispatcher-3] INFO akka.event.slf4j.Slf4jLogger - Slf4jLogger started
-[default-akka.actor.default-dispatcher-2] INFO cat.dvmlls.WebSocketClient - disconnected
-[default-akka.actor.default-dispatcher-3] INFO Listener$Master - disconnected
-[default-akka.actor.default-dispatcher-6] INFO Listener$Master - found websocket URL, users, and channels
-[default-akka.actor.default-dispatcher-3] INFO Listener$Master - connecting
+...
+2016-01-29 18:45:25:178 [default-akka.actor.default-dispatcher-4] INFO Bot$Brain - found websocket URL, users (183), and channels (137)
+2016-01-29 18:45:25:179 [default-akka.actor.default-dispatcher-3] INFO Bot$Brain - connecting
+2016-01-29 18:45:25:179 [default-akka.actor.default-dispatcher-3] INFO WebSocketClient - connecting to: wss://ms510.slack-msgs.com/websocket/oa8J1-ksBX3FCEo1LtxIoVxNc8kE9kXkV2wPl3RqFKtYQhoveZS6SgXWKNYVEFj1do05JFCK1LpMT9oE_CkMWqmu61MIys29I5PL1tZ_2xkYNYqGMebv-0oKhdg03BHNn5x6A3qUoK6p-ncoAjT5zg==
+2016-01-29 18:45:25:886 [default-akka.actor.default-dispatcher-3] INFO WebSocketClient - connected
+2016-01-29 18:45:25:899 [default-akka.actor.default-dispatcher-3] INFO Bot$Brain - unhandled message: {"type":"hello"}
+...
 ```
 
-To shut down your bot, terminate the actor system to shut down all the background threads:
+To shut down your bot cleanly, terminate the actor system, which shuts down all the background threads:
 ```
 scala> Listener.system.terminate()
 scala> :quit

@@ -1,5 +1,7 @@
 import javax.websocket.MessageHandler.Whole
 
+import spray.json.{JsonParser, JsValue}
+
 //import javax.websocket.MessageHandler.Partial
 import java.net.URI
 import javax.websocket._
@@ -9,7 +11,7 @@ import org.glassfish.tyrus.client.ClientManager
 
 object WebSocketClient {
   sealed trait Signal
-  case class Received(message:String) extends Signal
+  case class Received(message:JsValue) extends Signal
   //  case class ReceivedPartial(message:String, last:Boolean) extends Signal
   case class Disconnected() extends Signal
 }
@@ -26,8 +28,8 @@ class WebSocketClient extends Actor with ActorLogging {
       override def onOpen(session: Session, config: EndpointConfig) {
         session.addMessageHandler(new Whole[String] {
           override def onMessage(message: String) {
-            log.debug(s"received message: $message")
-            client ! Received(message)
+            val parsed = JsonParser(message)
+            client ! Received(parsed)
           }
         })
 /* i don't think Slack does this */
@@ -59,6 +61,7 @@ class WebSocketClient extends Actor with ActorLogging {
     case message:String =>
       log.debug(s"sending message: $message")
       session.getAsyncRemote.sendText(message)
+    case message:JsValue => self ! message.compactPrint
   }}
 
   override def receive: Receive = disconnected
