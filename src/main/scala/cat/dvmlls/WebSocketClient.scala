@@ -14,10 +14,10 @@ import org.glassfish.tyrus.client.ClientManager
  * http://stackoverflow.com/questions/26452903/javax-websocket-client-simple-example
  * https://tyrus.java.net/documentation/1.12/user-guide.html#d0e78
  */
-class WebSocketClient(client:ActorRef) extends Actor with ActorLogging {
+class WebSocketClient extends Actor with ActorLogging {
   import WebSocketClient._
 
-  def connect(server:URI) {
+  def connect(server:URI, client:ActorRef) {
     val endpoint = new Endpoint {
       override def onOpen(session: Session, config: EndpointConfig) {
         session.addMessageHandler(new Whole[String] {
@@ -47,8 +47,8 @@ class WebSocketClient(client:ActorRef) extends Actor with ActorLogging {
   }
 
   def disconnected:Receive = { log.info("disconnected") ; {
-    case (server:URI) => log.info(s"connecting to: $server")
-      connect(server)
+    case (server:URI, client:ActorRef) => log.info(s"connecting to: $server")
+      connect(server, client)
   }}
 
   def connected(session:Session):Receive = { log.info("connected") ; {

@@ -34,19 +34,38 @@ object Listener extends App {
   val rtmStart = API.createPipeline[RTMStart]("rtm.start")
   val channels = API.createPipeline[ChannelList]("channels.list")
   val users = API.createPipeline[UserList]("users.list")
+  val slackClient = system.actorOf(Props[WebSocketClient])
 
   class Master extends Actor with ActorLogging {
 
-    val slackClient = system.actorOf(Props { new WebSocketClient(self) })
+    case class Startup (uri:URI, channels:Map[String, String], users:Map[String, String])
 
-    rtmStart(blankRequest)
-      .map { case RTMStart(url) => new URI(url) }
-      .pipeTo(slackClient)
+    val f = for (
+      RTMStart(url) <- rtmStart(blankRequest) ;
+      ChannelList(channels) <- channels(blankRequest) ;
+      UserList(users) <- users(blankRequest)
+    ) yield {
+      Startup(new URI(url),
+        channels.map(c => (c.id, c.name)).toMap,
+        users.flatMap(u => u.profile.email.map(email => (u.id, email))).toMap)
+    }
 
-    def receive:Receive = {
+    f recover {
+      case e:Exception =>
+        log.error("couldn't start up", e)
+        system.terminate()
+    } pipeTo self
+
+    def connected(channels:Map[String, String], users:Map[String,String]):Receive = { log.info("connecting"); {
       case toSlack:String => slackClient ! toSlack
       case WebSocketClient.Received(fromSlack) => log.info(fromSlack)
-    }
+    }}
+
+    def receive:Receive = { log.info("disconnected"); {
+      case Startup(uri, cs, us) =>
+        slackClient ! (uri, self)
+        context.become(connected(cs, us))
+    }}
   }
 
   system.eventStream.subscribe(system.actorOf(Props[Unhandler]), classOf[UnhandledMessage])
