@@ -1,16 +1,15 @@
-package cat.dvmlls.slack.web
-
 import spray.json.{CollectionFormats, DefaultJsonProtocol}
 
-case class Ok(ok:Boolean, error:Option[String])
-case class RTMStart(url:String)
-case class Channel(id:String,name:String)
-case class ChannelList(channels:List[Channel])
-case class Profile(email:Option[String])
-case class User(id:String, name:String, profile:Profile)
-case class UserList(members:List[User])
+object SlackWebProtocol extends DefaultJsonProtocol with CollectionFormats {
 
-object Protocol extends DefaultJsonProtocol with CollectionFormats {
+  case class Ok(ok:Boolean, error:Option[String])
+  case class RTMStart(url:String)
+  case class Channel(id:String,name:String)
+  case class ChannelList(channels:List[Channel])
+  case class Profile(email:Option[String])
+  case class User(id:String, name:String, profile:Profile)
+  case class UserList(members:List[User])
+
   implicit val okFormat = jsonFormat2(Ok)
 
   implicit val rtmStartFormat = jsonFormat1(RTMStart)

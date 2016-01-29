@@ -1,11 +1,18 @@
-package cat.dvmlls
-
 import javax.websocket.MessageHandler.Whole
+
 //import javax.websocket.MessageHandler.Partial
 import java.net.URI
 import javax.websocket._
+
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import org.glassfish.tyrus.client.ClientManager
+
+object WebSocketClient {
+  sealed trait Signal
+  case class Received(message:String) extends Signal
+  //  case class ReceivedPartial(message:String, last:Boolean) extends Signal
+  case class Disconnected() extends Signal
+}
 
 /*
  * http://stackoverflow.com/questions/26452903/javax-websocket-client-simple-example
@@ -55,11 +62,4 @@ class WebSocketClient extends Actor with ActorLogging {
   }}
 
   override def receive: Receive = disconnected
-}
-
-object WebSocketClient {
-  sealed trait Signal
-  case class Received(message:String) extends Signal
-//  case class ReceivedPartial(message:String, last:Boolean) extends Signal
-  case class Disconnected() extends Signal
 }

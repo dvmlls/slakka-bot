@@ -1,10 +1,8 @@
-package cat.dvmlls.slack.web
-
+import SlackWebProtocol._
 import akka.actor.ActorSystem
 import spray.client.pipelining._
 import spray.http.{FormData, HttpRequest}
 import spray.json.{JsObject, JsonReader}
-import Protocol._
 import spray.httpx.SprayJsonSupport._
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -12,7 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
  * https://api.slack.com/web#basics
  * http://spray.io/documentation/1.2.3/spray-client/#usage
  */
-object API {
+object SlackWebAPI {
   case class Request(m:Map[String,String])
 
   def createPipeline[T](method:String)
@@ -33,8 +31,8 @@ object API {
          */
 
         response.flatMap(json => json.convertTo[Ok] match {
-          case Ok(ok, Some(msg)) => Future.failed(new Exception(msg))
-          case Ok(ok, None) => Future(json.convertTo[T])
+          case Ok(true, None) => Future(json.convertTo[T])
+          case Ok(false, Some(msg)) => Future.failed(new Exception(msg))
         })
     }
   }

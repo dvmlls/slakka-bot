@@ -1,24 +1,22 @@
 import java.util.concurrent.TimeUnit
 import akka.actor._
 import akka.util.Timeout
-import cat.dvmlls.WebSocketClient
-import cat.dvmlls.slack.web._
 import java.net.URI
 import akka.pattern.pipe
 
 object Listener extends App {
-  val token = args(0)
+  val token = sys.env("SLACK_TOKEN")
 
   implicit val system = ActorSystem()
   implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
   import system.dispatcher
 
-  import Protocol._
+  import SlackWebProtocol._
 
-  val blankRequest = API.Request(Map("token" -> token))
-  val rtmStart = API.createPipeline[RTMStart]("rtm.start")
-  val channels = API.createPipeline[ChannelList]("channels.list")
-  val users = API.createPipeline[UserList]("users.list")
+  val blankRequest = SlackWebAPI.Request(Map("token" -> token))
+  val rtmStart = SlackWebAPI.createPipeline[RTMStart]("rtm.start")
+  val channels = SlackWebAPI.createPipeline[ChannelList]("channels.list")
+  val users = SlackWebAPI.createPipeline[UserList]("users.list")
   val slackClient = system.actorOf(Props[WebSocketClient])
 
   class Master extends Actor with ActorLogging {
@@ -30,7 +28,7 @@ object Listener extends App {
       ChannelList(channels) <- channels(blankRequest) ;
       UserList(users) <- users(blankRequest)
     ) yield {
-      log.info("found websocket URL, users, and channels")
+      log.info(s"found websocket URL, users (${users.size}), and channels (${channels.size})")
       Startup(new URI(url),
         channels.map(c => (c.id, c.name)).toMap,
         users.flatMap(u => u.profile.email.map(email => (u.id, email))).toMap)
@@ -43,7 +41,6 @@ object Listener extends App {
     } pipeTo self
 
     def connected(channels:Map[String, String], users:Map[String,String]):Receive = { log.info("connecting"); {
-      case toSlack:String => slackClient ! toSlack
       case WebSocketClient.Received(fromSlack) =>
     }}
 
