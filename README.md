@@ -87,7 +87,7 @@ Send someone a direct message:
 scala> Bot.brain ! Bot.UserChat("dave", "your face")
 ```
 
-[Imgur](http://i.imgur.com/YhidXhl.png)
+![Imgur](http://i.imgur.com/YhidXhl.png)
 
 When they reply, it'll show up in the logs:
 ```
