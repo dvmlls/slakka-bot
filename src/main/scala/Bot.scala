@@ -64,7 +64,7 @@ object Bot extends App {
 
               for (
                 im <- ims.find(_.id == m.channel);
-                u <- users.find(_.id == im.id)
+                u <- users.find(_.id == im.user)
               ) log.info("" + UserChat(u.name, m.text))
             case _ => log.info(s"unhandled message: $fromSlack")
           }

@@ -82,9 +82,24 @@ $ tail -f ~/bot.log
 ...
 ```
 
+Send someone a direct message:
+```
+scala> Bot.brain ! Bot.UserChat("dave", "your face")
+```
+
+[Imgur](http://i.imgur.com/YhidXhl.png)
+
+When they reply, it'll show up in the logs:
+```
+2016-02-01 11:12:12:030 [default-akka.actor.default-dispatcher-4] INFO Bot$Brain - unhandled message: {"type":"user_typing","channel":"D0K3XHE3Y","user":"U06DF12SU"}
+2016-02-01 11:12:13:718 [default-akka.actor.default-dispatcher-4] INFO Bot$Brain - UserChat(dave,my face what?)
+2016-02-01 11:12:22:974 [default-akka.actor.default-dispatcher-4] INFO Bot$Brain - unhandled message: {"type":"reconnect_url","url":"wss://ms510.slack-msgs.com/websocket/OdLoJNQiyRcXmD07VIQ8qvr_IQuIOo7Az
+```
+
+
 To shut down your bot cleanly, terminate the actor system, which shuts down all the background threads:
 ```
-scala> Listener.system.terminate()
+scala> Bot.system.terminate()
 scala> :quit
 [success] Total time: 208 s, completed Jan 29, 2016 11:22:29 AM
 $ 
