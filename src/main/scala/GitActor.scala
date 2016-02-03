@@ -93,7 +93,7 @@ class GitActor extends Actor with ActorLogging {
       processor ! Request(repo, s"git push $remote --delete $branch")
       context.become(working(sender(), "deleting branch failed"), discardOld=false)
     case GetSHA(branch, remote) =>
-      processor ! Request(repo, s"git log $remote/$branch")
+      processor ! Request(repo, s"git log $remote/$branch -n 1")
       context.become(gettingSHA(sender()), discardOld=false)
   }
 
