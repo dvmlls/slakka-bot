@@ -38,18 +38,18 @@ class StatusPoller extends Actor with ActorLogging {
   }
 
   def handleTerminalStates(requester:ActorRef):Receive = {
-    case s:CISuccess =>
-      requester ! s
+    def terminate(a:Any): Unit = {
+      requester ! a
       context.become(idle)
-    case f:CIFailure =>
-      requester ! f
-      context.become(idle)
-    case e:CIError =>
-      requester ! e
-      context.become(idle)
-    case x:Status.Failure =>
-      requester ! x
-      context.become(idle)
+      self ! PoisonPill
+    }
+
+    {
+      case s:CISuccess => terminate(s)
+      case f:CIFailure => terminate(f)
+      case e:CIError => terminate(e)
+      case x:Status.Failure => terminate(x)
+    }
   }
 
   def unknown(hub:ActorRef, sha:String, requester:ActorRef, retriesLeft:Int=6):Receive = {
@@ -108,7 +108,6 @@ class GithubActor extends Actor with ActorLogging {
 
     {
       case Finished(r:Int) =>
-
         firstLine match {
           case Some(line) => requester ! PullRequested(line.trim)
           case None => requester ! Status.Failure(new Exception(s"couldn't open pull request: nothing returned, returnCode=$r"))
