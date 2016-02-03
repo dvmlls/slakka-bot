@@ -3,6 +3,8 @@ object Test extends App {
   import akka.actor.{Props, ActorSystem}
   import akka.util.Timeout
   import scala.util.{Failure, Success}
+  import GitActor._
+  import GithubActor._
 
   import akka.pattern.ask
 
@@ -14,15 +16,12 @@ object Test extends App {
   val h = system.actorOf(Props[GithubActor])
   val p = system.actorOf(Props[StatusPoller])
 
-  import GitActor._
-  import GithubActor._
-
-  val branch = "feature/less_git_log"
+  val branch = "feature/moar_logging"
   val remote = "origin"
   val target = "master"
   val org = "dvmlls"
   val proj = "slakka-bot"
-  val comment = "less git log"
+  val comment = "log state transitions"
 
   val f = for (
       RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
