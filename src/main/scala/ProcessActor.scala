@@ -22,6 +22,8 @@ class ProcessActor extends Actor with ActorLogging {
       val l = ProcessLogger(sender ! StdOut(_), sender ! StdErr(_))
       val p = Process(args, workingDirectory)
 
+      log.debug("" + p)
+
       sender() ! Finished(p ! l)
   }
 }

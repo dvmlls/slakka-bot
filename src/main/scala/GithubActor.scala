@@ -119,10 +119,10 @@ class GithubActor extends Actor with ActorLogging {
       context.become(working(sender(), "deleting branch failed"), discardOld=false)
     case CheckCIStatus(sha) =>
       processor ! Request(repo, s"hub ci-status $sha")
-      context.become(checkingCIStatus(sender()))
+      context.become(checkingCIStatus(sender()), discardOld=false)
     case GetSHA(branch, remote) =>
-      processor ! Request(repo, s"git log $remote $branch")
-      context.become(gettingSHA(sender()))
+      processor ! Request(repo, s"git log $remote/$branch")
+      context.become(gettingSHA(sender()), discardOld=false)
   }
 
   def cloning(org:String, project:String, requester:ActorRef, repo:File):Receive = {
