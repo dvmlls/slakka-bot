@@ -85,7 +85,7 @@ class GithubActor extends Actor with ActorLogging {
     var firstLine:Option[String] = None
 
     {
-      case Finished(r:Int) if r == 0 =>
+      case Finished(r:Int) =>
 
         firstLine match {
           case Some(line) =>
@@ -93,12 +93,9 @@ class GithubActor extends Actor with ActorLogging {
               case Array(_, sha) => requester ! GotSHA(sha)
               case _ => requester ! Status.Failure(new Exception(s"couldn't get sha: couldn't split first line of result"))
             }
-          case None => requester ! Status.Failure(new Exception(s"couldn't get sha: nothing returned"))
+          case None => requester ! Status.Failure(new Exception(s"couldn't get sha: return code=$r"))
         }
 
-        context.unbecome()
-      case Finished(r:Int) if r != 0 =>
-        requester ! Status.Failure(new Exception(s"couldn't get sha: return code=$r"))
         context.unbecome()
       case StdOut(line) if firstLine.isEmpty => firstLine = Some(line.trim)
     }
