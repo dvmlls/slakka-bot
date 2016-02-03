@@ -29,13 +29,12 @@ class StatusPoller extends Actor with ActorLogging {
   import StatusPoller._
   implicit val ctx = context.dispatcher
 
-  def pending(hub:ActorRef, sha:String, requester:ActorRef):Receive = {
-    case CIPending() =>
-      schedule(hub, sha)
+  def pending(hub:ActorRef, sha:String, requester:ActorRef):Receive = { log.debug("state -> pending"); {
+    case CIPending() => schedule(hub, sha)
     case u:CIUnknown =>
       context.become(unknown(hub, sha, requester) orElse handleTerminalStates(requester))
       schedule(hub, sha)
-  }
+  }}
 
   def handleTerminalStates(requester:ActorRef):Receive = {
     def terminate(a:Any): Unit = {
@@ -52,7 +51,7 @@ class StatusPoller extends Actor with ActorLogging {
     }
   }
 
-  def unknown(hub:ActorRef, sha:String, requester:ActorRef, retriesLeft:Int=6):Receive = {
+  def unknown(hub:ActorRef, sha:String, requester:ActorRef, retriesLeft:Int=6):Receive = { log.debug("state -> unknown"); {
     case CIPending() =>
       context.become(pending(hub, sha, requester) orElse handleTerminalStates(requester))
       schedule(hub, sha)
@@ -64,17 +63,17 @@ class StatusPoller extends Actor with ActorLogging {
         context.become(unknown(hub, sha, requester, retriesLeft-1) orElse handleTerminalStates(requester))
         schedule(hub, sha)
       }
-  }
+  }}
 
   def schedule(hub:ActorRef, sha:String)  {
     context.system.scheduler.scheduleOnce(Duration.create(10, TimeUnit.SECONDS), hub, CheckCIStatus(sha))
   }
 
-  def idle:Receive = {
-    case Poll(hub, sha) =>
-      hub ! CheckCIStatus(sha)
-      context.become(unknown(hub, sha, sender()) orElse handleTerminalStates(sender()))
-  }
+  def idle:Receive = { log.debug("state -> idle"); {
+      case Poll(hub, sha) =>
+        hub ! CheckCIStatus(sha)
+        context.become(unknown(hub, sha, sender()) orElse handleTerminalStates(sender()))
+  }}
 
   def receive = idle
 }
@@ -84,7 +83,7 @@ class GithubActor extends Actor with ActorLogging {
 
   val processor = context.actorOf(Props[ProcessActor])
 
-  def checkingCIStatus(requester:ActorRef):Receive = {
+  def checkingCIStatus(requester:ActorRef):Receive = { log.debug("status -> checkingCIStatus")
     var firstLine:Option[String] = None
 
     {
@@ -103,7 +102,7 @@ class GithubActor extends Actor with ActorLogging {
     }
   }
 
-  def pullRequesting(requester:ActorRef):Receive = {
+  def pullRequesting(requester:ActorRef):Receive = { log.debug("status -> pullRequesting")
     var firstLine:Option[String] = None
 
     {
@@ -118,14 +117,14 @@ class GithubActor extends Actor with ActorLogging {
     }
   }
 
-  def idle(repo:File):Receive = {
+  def idle(repo:File):Receive = { log.debug("status -> idle"); {
     case CheckCIStatus(sha) =>
       processor ! Request(repo, s"hub ci-status $sha")
       context.become(checkingCIStatus(sender()), discardOld=false)
     case PullRequest(title, org, proj, from, to) =>
       processor ! Request(repo, Seq("hub", "pull-request", "-m", title, "-b", s"$org/$proj:$to", "-h", s"$org/$proj:$from"))
       context.become(pullRequesting(sender()), discardOld=false)
-  }
+  }}
 
   def receive = {
     case RepoCloned(repo) =>

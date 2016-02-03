@@ -24,7 +24,7 @@ class GitActor extends Actor with ActorLogging {
 
   val processor = context.actorOf(Props[ProcessActor])
 
-  def abortingMerge(requester:ActorRef):Receive = {
+  def abortingMerge(requester:ActorRef):Receive = { log.debug("state -> abortingMerge"); {
     case Finished(r:Int) if r == 0 =>
       requester ! Status.Success("")
       context.unbecome() // mergeFailed
@@ -33,34 +33,34 @@ class GitActor extends Actor with ActorLogging {
     case Finished(r:Int) if r != 0 =>
       requester ! Status.Failure(new Exception(s"merge abort failed: $r"))
       context.unbecome()
-  }
+  }}
 
-  def mergeFailed(repo:File):Receive = {
+  def mergeFailed(repo:File):Receive = { log.debug("state -> mergeFailed"); {
     case AbortMerge =>
       processor ! Request(repo, "git merge --abort")
       context.become(abortingMerge(sender()), discardOld=false)
-  }
+  }}
 
-  def merging(repo:File, requester:ActorRef):Receive = {
+  def merging(repo:File, requester:ActorRef):Receive = { log.debug("state -> merging"); {
     case Finished(r:Int) if r == 0 =>
       requester ! Status.Success("")
       context.unbecome()
     case Finished(r:Int) if r != 0 =>
       requester ! Status.Failure(new Exception(s"merge failed: $r"))
       context.become(mergeFailed(repo), discardOld=false)
-  }
+  }}
 
-  def working(requester:ActorRef, failureMessage:String):Receive = {
+  def working(requester:ActorRef, failureMessage:String):Receive = { log.debug("state -> working"); {
     case Finished(r:Int) if r == 0 =>
       requester ! Status.Success("")
       context.unbecome()
     case Finished(r:Int) if r != 0 =>
       requester ! Status.Failure(new Exception(s"$failureMessage: $r"))
       context.unbecome()
-  }
+  }}
 
   def gettingSHA(requester:ActorRef):Receive = {
-
+    log.debug("state -> gettingSHA")
     var firstLine:Option[String] = None
 
     {
@@ -85,7 +85,7 @@ class GitActor extends Actor with ActorLogging {
     context.become(working(sender(), s"failed: $command"), discardOld=false)
   }
 
-  def ready(org:String, project:String, repo:File):Receive = {
+  def ready(org:String, project:String, repo:File):Receive = { log.debug("state -> ready"); {
     case Checkout(branch) => simpleTask(repo, s"git checkout $branch")
     case Push(remote) => simpleTask(repo, s"git push $remote")
     case DeleteBranch(branch, remote) => simpleTask(repo, s"git push $remote --delete $branch")
@@ -96,18 +96,18 @@ class GitActor extends Actor with ActorLogging {
     case GetSHA(branch, remote) =>
       processor ! Request(repo, s"git log $remote/$branch -n 1")
       context.become(gettingSHA(sender()), discardOld=false)
-  }
+  }}
 
-  def cloning(org:String, project:String, requester:ActorRef, repo:File):Receive = {
+  def cloning(org:String, project:String, requester:ActorRef, repo:File):Receive = { log.debug("state -> cloning"); {
     case Finished(r:Int) if r == 0 =>
       requester ! RepoCloned(repo)
       context.become(ready(org, project, repo))
     case Finished(r:Int) if r != 0 =>
       requester ! Status.Failure(new Exception(s"clone failed: $r"))
       context.unbecome()
-  }
+  }}
 
-  def empty:Receive = {
+  def empty:Receive = { log.debug("state -> empty"); {
     case CloneRepo(org, project) =>
       Try { Files.createTempDirectory("repo").toFile } match {
         case Success(parent) =>
@@ -115,7 +115,7 @@ class GitActor extends Actor with ActorLogging {
           context.become(cloning(org, project, sender(), new File(parent, project)), discardOld = false)
         case Failure(ex) => sender() ! Status.Failure(ex)
       }
-  }
+  }}
 
   def receive = empty
 }
