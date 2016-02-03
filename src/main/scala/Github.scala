@@ -83,8 +83,10 @@ object Test extends App {
   implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
   import system.dispatcher
 
-  val a = system.actorOf(Props[GithubActor])
+  val g = system.actorOf(Props[GitActor])
+  val h = system.actorOf(Props[GithubActor])
 
+  import GitActor._
   import GithubActor._
 
   val branch = "feature/github"
@@ -92,18 +94,19 @@ object Test extends App {
   val target = "master"
 
   val f = for (
-    RepoCloned(repo) <- (a ? CloneRepo("dvmlls", "slakka-bot")).mapTo[RepoCloned];
-    y <- (a ? Checkout(target)).mapTo[Succeeded];
-    GotSHA(sha) <- (a ? GetSHA(branch, remote)).mapTo[GotSHA];
-    CIStatus(status) <- (a ? CheckCIStatus(sha)).mapTo[CIStatus] ;
+    RepoCloned(repo) <- (g ? CloneRepo("dvmlls", "slakka-bot")).mapTo[RepoCloned];
+    x <- (g ? Checkout(target)).mapTo[Succeeded];
+    GotSHA(sha) <- (g ? GetSHA(branch, remote)).mapTo[GotSHA];
+    y <- (h ? RepoCloned(repo)).mapTo[Succeeded];
+    CIStatus(status) <- (h ? CheckCIStatus(sha)).mapTo[CIStatus] ;
     if status == "success" ;
-    z <- (a ? Merge(branch)).mapTo[Succeeded];
-    w <- (a ? Push(remote)).mapTo[Succeeded];
-    u <- (a ? DeleteBranch(branch, remote)).mapTo[Succeeded]
-  ) yield (repo,y,z,w,u, sha, status)
+    z <- (g ? Merge(branch)).mapTo[Succeeded];
+    w <- (g ? Push(remote)).mapTo[Succeeded];
+    u <- (g ? DeleteBranch(branch, remote)).mapTo[Succeeded]
+  ) yield (repo,x,y,z,w,u,sha,status)
 
   f.onComplete {
-    case Success((repo,y,z,w,u, sha, status)) => System.out.println(s"success: repo=$repo y=$y z=$z, w=$w, u=$u, sha=$sha, status=$status")
+    case Success((repo,x,y,z,w,u,sha,status)) => System.out.println(s"success: repo=$repo y=$y z=$z, w=$w, u=$u, sha=$sha, status=$status")
     case Failure(ex) => System.err.println("failure: " + ex)
   }
 
