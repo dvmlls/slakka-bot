@@ -16,6 +16,7 @@ object GitActor {
   case class DeleteBranch(branch:String, remote:String)
   case class GetSHA(branch:String, remote:String)
   case class GotSHA(sha:String)
+  case class AddRemote(name:String, path:String)
 }
 
 class GitActor extends Actor with ActorLogging {
@@ -79,19 +80,19 @@ class GitActor extends Actor with ActorLogging {
     }
   }
 
+  def simpleTask(repo:File, command:Seq[String]): Unit = {
+    processor ! Request(repo, command)
+    context.become(working(sender(), s"failed: $command"), discardOld=false)
+  }
+
   def ready(org:String, project:String, repo:File):Receive = {
-    case Checkout(branch) =>
-      processor ! Request(repo, s"git checkout $branch")
-      context.become(working(sender(), "checking out failed"), discardOld=false)
+    case Checkout(branch) => simpleTask(repo, s"git checkout $branch")
+    case Push(remote) => simpleTask(repo, s"git push $remote")
+    case DeleteBranch(branch, remote) => simpleTask(repo, s"git push $remote --delete $branch")
+    case AddRemote(remote, path) => simpleTask(repo, s"git remote add $remote $path")
     case Merge(other) =>
       processor ! Request(repo, s"git merge --no-ff origin/$other")
       context.become(merging(repo, sender()), discardOld=false)
-    case Push(remote) =>
-      processor ! Request(repo, s"git push $remote")
-      context.become(working(sender(), "pushing failed"), discardOld=false)
-    case DeleteBranch(branch, remote) =>
-      processor ! Request(repo, s"git push $remote --delete $branch")
-      context.become(working(sender(), "deleting branch failed"), discardOld=false)
     case GetSHA(branch, remote) =>
       processor ! Request(repo, s"git log $remote/$branch -n 1")
       context.become(gettingSHA(sender()), discardOld=false)
