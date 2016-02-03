@@ -65,16 +65,13 @@ class GithubActor extends Actor with ActorLogging {
     var firstLine:Option[String] = None
 
     {
-      case Finished(r:Int) if r == 0 =>
+      case Finished(r:Int) =>
 
         firstLine match {
           case Some(line) => requester ! CIStatus(line.trim)
-          case None => requester ! Status.Failure(new Exception(s"couldn't get sha: nothing returned"))
+          case None => requester ! Status.Failure(new Exception(s"couldn't get status: return code=$r"))
         }
 
-        context.unbecome()
-      case Finished(r:Int) if r != 0 =>
-        requester ! Status.Failure(new Exception(s"couldn't get sha: return code=$r"))
         context.unbecome()
       case StdOut(line) if firstLine.isEmpty => firstLine = Some(line.trim)
     }
@@ -118,7 +115,7 @@ class GithubActor extends Actor with ActorLogging {
       processor ! Request(repo, s"hub ci-status $sha")
       context.become(checkingCIStatus(sender()), discardOld=false)
     case GetSHA(branch, remote) =>
-      processor ! Request(repo, s"git log $remote/$branch")
+      processor ! Request(repo, s"git log $remote/$branch -n 1")
       context.become(gettingSHA(sender()), discardOld=false)
   }
 
