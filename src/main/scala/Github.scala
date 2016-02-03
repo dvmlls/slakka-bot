@@ -1,11 +1,7 @@
 import java.io.File
 import java.nio.file.Files
 
-import akka.actor.PoisonPill
-
 import scala.sys.process.{ProcessLogger, Process}
-
-
 
 object Github {
 
@@ -80,33 +76,40 @@ object Test extends App {
   import akka.pattern.ask
 
   implicit val system = ActorSystem()
-  implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
+  implicit val timeout = new Timeout(10, TimeUnit.MINUTES)
   import system.dispatcher
 
   val g = system.actorOf(Props[GitActor])
   val h = system.actorOf(Props[GithubActor])
+  val p = system.actorOf(Props[StatusPoller])
 
   import GitActor._
   import GithubActor._
 
-  val branch = "feature/github"
+  val branch = "feature/status_polling"
   val remote = "origin"
   val target = "master"
+  val org = "dvmlls"
+  val proj = "slakka-bot"
 
   val f = for (
-    RepoCloned(repo) <- (g ? CloneRepo("dvmlls", "slakka-bot")).mapTo[RepoCloned];
-    x <- (g ? Checkout(target)).mapTo[Succeeded];
-    GotSHA(sha) <- (g ? GetSHA(branch, remote)).mapTo[GotSHA];
-    y <- (h ? RepoCloned(repo)).mapTo[Succeeded];
-    CIStatus(status) <- (h ? CheckCIStatus(sha)).mapTo[CIStatus] ;
-    if status == "success" ;
-    z <- (g ? Merge(branch)).mapTo[Succeeded];
-    w <- (g ? Push(remote)).mapTo[Succeeded];
-    u <- (g ? DeleteBranch(branch, remote)).mapTo[Succeeded]
-  ) yield (repo,x,y,z,w,u,sha,status)
+      RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
+                     _ <- h ? RepoCloned(repo);
+    PullRequested(url) <- (h ? PullRequest("status polling", org, proj, branch, target)).mapTo[PullRequested];
+                     _ <- g ? Checkout(target);
+           GotSHA(sha) <- (g ? GetSHA(branch, remote)).mapTo[GotSHA];
+           ciSucceeded <- (p ? StatusPoller.Poll(h, sha)).map {
+                            case s:CISuccess => true
+                            case _ => println("ci failed"); false
+                          } ;
+                  if ciSucceeded;
+                     _ <- g ? Merge(branch);
+                     _ <- g ? Push(remote);
+                     _ <- g ? DeleteBranch(branch, remote)
+  ) yield (repo,sha,ciSucceeded, url)
 
   f.onComplete {
-    case Success((repo,x,y,z,w,u,sha,status)) => System.out.println(s"success: repo=$repo y=$y z=$z, w=$w, u=$u, sha=$sha, status=$status")
+    case Success((repo,sha,ciSucceeded, url)) => System.out.println(s"success: repo=$repo sha=$sha ciSucceeded=$ciSucceeded url=$url")
     case Failure(ex) => System.err.println("failure: " + ex)
   }
 

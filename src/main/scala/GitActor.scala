@@ -14,7 +14,6 @@ object GitActor {
   case class AbortMerge()
   case class Push(remote:String)
   case class DeleteBranch(branch:String, remote:String)
-  case class Succeeded()
   case class GetSHA(branch:String, remote:String)
   case class GotSHA(sha:String)
 }
@@ -26,7 +25,7 @@ class GitActor extends Actor with ActorLogging {
 
   def abortingMerge(requester:ActorRef):Receive = {
     case Finished(r:Int) if r == 0 =>
-      requester ! Succeeded()
+      requester ! Status.Success("")
       context.unbecome() // mergeFailed
       context.unbecome() // merging
       context.unbecome() // ready
@@ -43,7 +42,7 @@ class GitActor extends Actor with ActorLogging {
 
   def merging(repo:File, requester:ActorRef):Receive = {
     case Finished(r:Int) if r == 0 =>
-      requester ! Succeeded()
+      requester ! Status.Success("")
       context.unbecome()
     case Finished(r:Int) if r != 0 =>
       requester ! Status.Failure(new Exception(s"merge failed: $r"))
@@ -52,7 +51,7 @@ class GitActor extends Actor with ActorLogging {
 
   def working(requester:ActorRef, failureMessage:String):Receive = {
     case Finished(r:Int) if r == 0 =>
-      requester ! Succeeded()
+      requester ! Status.Success("")
       context.unbecome()
     case Finished(r:Int) if r != 0 =>
       requester ! Status.Failure(new Exception(s"$failureMessage: $r"))
