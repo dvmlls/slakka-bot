@@ -14,9 +14,11 @@ object GithubActor {
   case class AbortMerge()
   case class Push(remote:String)
   case class DeleteBranch(branch:String, remote:String)
-  case class CheckCIStatus()
+  case class CheckCIStatus(sha:String)
   case class CIStatus(status:String)
   case class Succeeded()
+  case class GetSHA(branch:String, remote:String)
+  case class GotSHA(sha:String)
 }
 
 class GithubActor extends Actor with ActorLogging {
@@ -59,6 +61,49 @@ class GithubActor extends Actor with ActorLogging {
       context.unbecome()
   }
 
+  def checkingCIStatus(requester:ActorRef):Receive = {
+    var firstLine:Option[String] = None
+
+    {
+      case Finished(r:Int) if r == 0 =>
+
+        firstLine match {
+          case Some(line) => requester ! CIStatus(line.trim)
+          case None => requester ! Status.Failure(new Exception(s"couldn't get sha: nothing returned"))
+        }
+
+        context.unbecome()
+      case Finished(r:Int) if r != 0 =>
+        requester ! Status.Failure(new Exception(s"couldn't get sha: return code=$r"))
+        context.unbecome()
+      case StdOut(line) if firstLine.isEmpty => firstLine = Some(line.trim)
+    }
+  }
+
+  def gettingSHA(requester:ActorRef):Receive = {
+
+    var firstLine:Option[String] = None
+
+    {
+      case Finished(r:Int) if r == 0 =>
+
+        firstLine match {
+          case Some(line) =>
+            line.split(' ') match {
+              case Array(_, sha) => requester ! GotSHA(sha)
+              case _ => requester ! Status.Failure(new Exception(s"couldn't get sha: couldn't split first line of result"))
+            }
+          case None => requester ! Status.Failure(new Exception(s"couldn't get sha: nothing returned"))
+        }
+
+        context.unbecome()
+      case Finished(r:Int) if r != 0 =>
+        requester ! Status.Failure(new Exception(s"couldn't get sha: return code=$r"))
+        context.unbecome()
+      case StdOut(line) if firstLine.isEmpty => firstLine = Some(line.trim)
+    }
+  }
+
   def ready(org:String, project:String, repo:File):Receive = {
     case Checkout(branch) =>
       processor ! Request(repo, s"git checkout $branch")
@@ -72,6 +117,12 @@ class GithubActor extends Actor with ActorLogging {
     case DeleteBranch(branch, remote) =>
       processor ! Request(repo, s"git push $remote --delete $branch")
       context.become(working(sender(), "deleting branch failed"), discardOld=false)
+    case CheckCIStatus(sha) =>
+      processor ! Request(repo, s"hub ci-status $sha")
+      context.become(checkingCIStatus(sender()))
+    case GetSHA(branch, remote) =>
+      processor ! Request(repo, s"git log $remote $branch")
+      context.become(gettingSHA(sender()))
   }
 
   def cloning(org:String, project:String, requester:ActorRef, repo:File):Receive = {
