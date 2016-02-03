@@ -118,7 +118,7 @@ class GithubActor extends Actor with ActorLogging {
       processor ! Request(repo, s"hub ci-status $sha")
       context.become(checkingCIStatus(sender()), discardOld=false)
     case GetSHA(branch, remote) =>
-      processor ! Request(repo, s"git log $remote/$branch")
+      processor ! Request(repo, s"git log $remote/$branch -n 1")
       context.become(gettingSHA(sender()), discardOld=false)
   }
 
