@@ -7,7 +7,6 @@ import GithubActor._
 import akka.actor._
 
 import scala.concurrent.duration.Duration
-import scala.util.Success
 
 object GithubActor {
   case class CheckCIStatus(sha:String)
@@ -90,7 +89,6 @@ class GithubActor extends Actor with ActorLogging {
 
     {
       case Finished(r:Int) =>
-
         firstLine.map(_.trim) match {
           case Some("success") => requester ! CISuccess()
           case Some("failure") => requester ! CIFailure()
