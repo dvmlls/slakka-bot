@@ -15,15 +15,16 @@ object GithubActor {
   case class Merged()
   case class AbortMerge()
   case class MergeAborted()
-  case class Push(destination:String)
+  case class Push(remote:String)
   case class Pushed()
+  case class DeleteBranch(branch:String, remote:String)
+  case class BranchDeleted()
 }
 
 class GithubActor extends Actor with ActorLogging {
   import GithubActor._
 
   val processor = context.actorOf(Props[ProcessActor])
-
 
   def abortingMerge(org:String, project:String, repo:File, requester:ActorRef):Receive = {
     case Finished(r:Int) if r == 0 =>
@@ -67,6 +68,15 @@ class GithubActor extends Actor with ActorLogging {
       context.become(cloned(org, project, repo))
   }
 
+  def deletingBranch(org: String, project: String, repo: File, requester:ActorRef):Receive = {
+    case Finished(r:Int) if r == 0 =>
+      requester ! BranchDeleted()
+      context.become(cloned(org, project, repo))
+    case Finished(r:Int) if r != 0 =>
+      requester ! Status.Failure(new Exception(s"delete failed: $r"))
+      context.become(cloned(org, project, repo))
+  }
+
   def cloned(org:String, project:String, repo:File):Receive = {
     case Checkout(branch) =>
       processor ! Request(repo, s"git checkout $branch")
@@ -74,9 +84,12 @@ class GithubActor extends Actor with ActorLogging {
     case Merge(other) =>
       processor ! Request(repo, s"git merge --no-ff origin/$other")
       context.become(merging(org, project, repo, sender()))
-    case Push(destination) =>
-      processor ! Request(repo, s"git push $destination")
+    case Push(remote) =>
+      processor ! Request(repo, s"git push $remote")
       context.become(pushing(org, project, repo, sender()))
+    case DeleteBranch(branch, remote) =>
+      processor ! Request(repo, s"git push $remote --delete $branch")
+      context.become(deletingBranch(org, project, repo, sender()))
   }
 
   def cloning(org:String, project:String, requester:ActorRef, repo:File):Receive = {
