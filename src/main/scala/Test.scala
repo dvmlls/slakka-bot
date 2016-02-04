@@ -22,20 +22,20 @@ object Commons extends App {
   val heroku = "wework-anywhere"
 
   val f = for (
-      RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
-                     _ <- h ? RepoCloned(repo);
-           GotSHA(branchSha) <- (g ? GetSHA(branch, "origin")).mapTo[GotSHA];
-           ciSucceeded <- (p ? StatusPoller.Poll(h, branchSha)).map {
-                            case s:CISuccess => true
-                            case a:Any => println(s"ci failed: $a"); false
-                          } ;
-                  if ciSucceeded;
-                       _ <- g ? Checkout("master");
-                       _ <- g ? Merge(branch);
-                       _ <- g ? Push("origin");
-                       _ <- g ? DeleteBranch(branch, "origin");
-                       _ <- g ? AddRemote("production", s"git@heroku.com:$heroku.git");
-                       _ <- g ? Push("production")
+    RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
+    _ <- h ? RepoCloned(repo);
+    GotSHA(branchSha) <- (g ? GetSHA(branch, "origin")).mapTo[GotSHA];
+    ciSucceeded <- (p ? StatusPoller.Poll(h, branchSha)).map {
+      case s:CISuccess => true
+      case a:Any => println(s"ci failed: $a"); false
+    } ;
+    if ciSucceeded;
+    _ <- g ? Checkout("master");
+    _ <- g ? Merge(branch);
+    _ <- g ? Push("origin");
+    _ <- g ? DeleteBranch(branch, "origin");
+    _ <- g ? AddRemote("production", s"git@heroku.com:$heroku.git");
+    _ <- g ? Push("production")
   ) yield (repo,branchSha,ciSucceeded)
 
   f.onComplete {

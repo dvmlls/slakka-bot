@@ -1,5 +1,6 @@
 import akka.actor.ActorSystem
 import spray.client.pipelining._
+import spray.httpx.unmarshalling.FromResponseUnmarshaller
 import spray.json._
 import spray.httpx.SprayJsonSupport._
 import scala.concurrent.ExecutionContext
@@ -22,21 +23,47 @@ object GithubWebProtocol extends DefaultJsonProtocol with MoreJsonProtocols {
   case class MergeFailure(message:String, documentation_url:String)
   implicit val mergeSuccessFormat = jsonFormat3(MergeSuccess)
   implicit val mergeFailureFormat = jsonFormat2(MergeFailure)
+
+  case class PullRequestHead(ref:String, sha:String)
+  case class PullRequest(number:Int, state:String, head:PullRequestHead, mergeable:Option[Boolean], merged:Boolean)
+  implicit val pullRequestHeadFormat = jsonFormat2(PullRequestHead)
+  implicit val pullRequestFormat = jsonFormat5(PullRequest)
+
+  case class CreatePullRequest(title:String, head:String, base:String, body:String)
+  case class PullRequestCreated(number:Int)
+  implicit val createPullRequestFormat = jsonFormat4(CreatePullRequest)
+  implicit val pullRequestCreatedFormat = jsonFormat1(PullRequestCreated)
 }
 
 object GithubWebAPI {
   import GithubWebProtocol._
 
   val api = "https://api.github.com"
-  def ghPipeline(implicit system:ActorSystem, cx:ExecutionContext) = {
-    addHeader("Authorization", s"token ${sys.env("GITHUB_TOKEN")}") ~> sendReceive
+  def pipeline[T](implicit system:ActorSystem, cx:ExecutionContext, um:FromResponseUnmarshaller[T]) = {
+    addHeader("Authorization", s"token ${sys.env("GITHUB_TOKEN")}") ~>
+      sendReceive ~>
+      unmarshal[T]
   }
 
   def mergePullRequest(org:String, proj:String, number:Int, sha:String)
                       (implicit sys:ActorSystem, cx:ExecutionContext) = {
     val req = Put(s"$api/repos/$org/$proj/pulls/$number/merge", MergeRequest("", sha))
-    val pipeline = ghPipeline ~> unmarshal[Either[MergeFailure, MergeSuccess]]
-    pipeline(req)
+    val p = pipeline[Either[MergeFailure, MergeSuccess]]
+    p(req)
+  }
+
+  def getPullRequest(org:String, proj:String, number:Int)
+                    (implicit sys:ActorSystem, cx:ExecutionContext) = {
+    val req = Get(s"$api/repos/$org/$proj/pulls/$number")
+    val p = pipeline[PullRequest]
+    p(req)
+  }
+
+  def createPullRequest(org:String, proj:String, title:String, body:String, head:String, base:String)
+                       (implicit sys:ActorSystem, cx:ExecutionContext) = {
+    val req = Post(s"$api/repos/$org/$proj/pulls", CreatePullRequest(title, head, base, body))
+    val p = pipeline[PullRequestCreated]
+    p(req)
   }
 }
 
@@ -45,10 +72,12 @@ object GithubWebAPITester extends App {
   implicit val system = ActorSystem()
   import system.dispatcher
 
-  GithubWebAPI.mergePullRequest("dvmlls", "slakka-bot", 15, "1b8000d5cc663ee8974a72e88a2e6389c93a6cd9").onComplete {
-    case a:Any =>
-      println(a)
-      system.terminate()
-      sys.exit()
-  }
+  GithubWebAPI
+    .getPullRequest("dvmlls", "slakka-bot", 16)
+    .onComplete {
+      case a:Any =>
+        println(a)
+        system.terminate()
+        sys.exit()
+    }
 }
