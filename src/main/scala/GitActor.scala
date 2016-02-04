@@ -70,7 +70,7 @@ class GitActor extends Actor with ActorLogging {
           case Some(line) =>
             line.split(' ') match {
               case Array(_, sha) => requester ! GotSHA(sha)
-              case _ => requester ! Status.Failure(new Exception(s"couldn't get sha: couldn't split first line of result"))
+              case _ => requester ! Status.Failure(new Exception(s"couldn't get sha: unable to split first line"))
             }
           case None => requester ! Status.Failure(new Exception(s"couldn't get sha: return code=$r"))
         }

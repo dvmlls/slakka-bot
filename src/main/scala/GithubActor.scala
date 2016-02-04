@@ -40,7 +40,6 @@ class StatusPoller extends Actor with ActorLogging {
     def terminate(a:Any): Unit = {
       requester ! a
       context.become(idle)
-      self ! PoisonPill
     }
 
     {
