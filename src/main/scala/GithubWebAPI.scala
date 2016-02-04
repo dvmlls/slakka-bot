@@ -17,22 +17,22 @@ trait MoreJsonProtocols {
 }
 
 object GithubWebProtocol extends DefaultJsonProtocol with MoreJsonProtocols {
-  case class MergeRequest(commit_message:String, sha:String)
-  implicit val mergeRequestFormat = jsonFormat2(MergeRequest)
-  case class MergeSuccess(message:String, merged:Boolean, sha:String)
-  case class MergeFailure(message:String, documentation_url:String)
-  implicit val mergeSuccessFormat = jsonFormat3(MergeSuccess)
-  implicit val mergeFailureFormat = jsonFormat2(MergeFailure)
+  case class MergePR(commit_message:String, sha:String)
+  implicit val mergePRFormat = jsonFormat2(MergePR)
+  case class MergePRSuccess(message:String, merged:Boolean, sha:String)
+  case class MergePRFailure(message:String, documentation_url:String)
+  implicit val mergePRSuccessFormat = jsonFormat3(MergePRSuccess)
+  implicit val mergePRFailureFormat = jsonFormat2(MergePRFailure)
 
-  case class PullRequestHead(ref:String, sha:String)
-  case class PullRequest(number:Int, state:String, head:PullRequestHead, mergeable:Option[Boolean], merged:Boolean)
-  implicit val pullRequestHeadFormat = jsonFormat2(PullRequestHead)
-  implicit val pullRequestFormat = jsonFormat5(PullRequest)
+  case class PRHead(ref:String, sha:String)
+  case class PR(number:Int, state:String, head:PRHead, mergeable:Option[Boolean], merged:Boolean)
+  implicit val PRHeadFormat = jsonFormat2(PRHead)
+  implicit val PRFormat = jsonFormat5(PR)
 
-  case class CreatePullRequest(title:String, head:String, base:String, body:String)
-  case class PullRequestCreated(number:Int)
-  implicit val createPullRequestFormat = jsonFormat4(CreatePullRequest)
-  implicit val pullRequestCreatedFormat = jsonFormat1(PullRequestCreated)
+  case class CreatePR(title:String, head:String, base:String, body:String)
+  case class PRCreated(number:Int)
+  implicit val createPRFormat = jsonFormat4(CreatePR)
+  implicit val PRCreatedFormat = jsonFormat1(PRCreated)
 }
 
 object GithubWebAPI {
@@ -45,24 +45,24 @@ object GithubWebAPI {
       unmarshal[T]
   }
 
-  def mergePullRequest(org:String, proj:String, number:Int, sha:String)
+  def mergePR(org:String, proj:String, number:Int, sha:String)
                       (implicit sys:ActorSystem, cx:ExecutionContext) = {
-    val req = Put(s"$api/repos/$org/$proj/pulls/$number/merge", MergeRequest("", sha))
-    val p = pipeline[Either[MergeFailure, MergeSuccess]]
+    val req = Put(s"$api/repos/$org/$proj/pulls/$number/merge", MergePR("", sha))
+    val p = pipeline[Either[MergePRFailure, MergePRSuccess]]
     p(req)
   }
 
-  def getPullRequest(org:String, proj:String, number:Int)
+  def getPR(org:String, proj:String, number:Int)
                     (implicit sys:ActorSystem, cx:ExecutionContext) = {
     val req = Get(s"$api/repos/$org/$proj/pulls/$number")
-    val p = pipeline[PullRequest]
+    val p = pipeline[PR]
     p(req)
   }
 
-  def createPullRequest(org:String, proj:String, title:String, body:String, head:String, base:String)
+  def createPR(org:String, proj:String, title:String, body:String, head:String, base:String)
                        (implicit sys:ActorSystem, cx:ExecutionContext) = {
-    val req = Post(s"$api/repos/$org/$proj/pulls", CreatePullRequest(title, head, base, body))
-    val p = pipeline[PullRequestCreated]
+    val req = Post(s"$api/repos/$org/$proj/pulls", CreatePR(title, head, base, body))
+    val p = pipeline[PRCreated]
     p(req)
   }
 }
@@ -72,12 +72,23 @@ object GithubWebAPITester extends App {
   implicit val system = ActorSystem()
   import system.dispatcher
 
-  GithubWebAPI
-    .getPullRequest("dvmlls", "slakka-bot", 16)
-    .onComplete {
-      case a:Any =>
-        println(a)
-        system.terminate()
-        sys.exit()
-    }
+  val org = "dvmlls"
+  val proj = "slakka-bot"
+  val branch = "feature/web_pull_requests"
+
+  import GithubWebAPI._
+  import GithubWebProtocol._
+
+  val f = for (
+    PRCreated(number) <- createPR(org, proj, "web pull requests", "", branch, "master");
+    PR(_, state, PRHead(_, sha), _, _) <- getPR(org, proj, number);
+    result <- mergePR(org, proj, number, sha)
+  ) yield result
+
+  f.onComplete {
+    case a:Any => println(a)
+      println(a)
+      system.terminate()
+      sys.exit()
+  }
 }
