@@ -1,5 +1,6 @@
 import akka.actor.ActorSystem
 import spray.client.pipelining._
+import spray.httpx.unmarshalling.FromResponseUnmarshaller
 import spray.json._
 import spray.httpx.SprayJsonSupport._
 import scala.concurrent.ExecutionContext
@@ -16,27 +17,53 @@ trait MoreJsonProtocols {
 }
 
 object GithubWebProtocol extends DefaultJsonProtocol with MoreJsonProtocols {
-  case class MergeRequest(commit_message:String, sha:String)
-  implicit val mergeRequestFormat = jsonFormat2(MergeRequest)
-  case class MergeSuccess(message:String, merged:Boolean, sha:String)
-  case class MergeFailure(message:String, documentation_url:String)
-  implicit val mergeSuccessFormat = jsonFormat3(MergeSuccess)
-  implicit val mergeFailureFormat = jsonFormat2(MergeFailure)
+  case class MergePR(commit_message:String, sha:String)
+  implicit val mergePRFormat = jsonFormat2(MergePR)
+  case class MergePRSuccess(message:String, merged:Boolean, sha:String)
+  case class MergePRFailure(message:String, documentation_url:String)
+  implicit val mergePRSuccessFormat = jsonFormat3(MergePRSuccess)
+  implicit val mergePRFailureFormat = jsonFormat2(MergePRFailure)
+
+  case class PRHead(ref:String, sha:String)
+  case class PR(number:Int, state:String, head:PRHead, mergeable:Option[Boolean], merged:Boolean)
+  implicit val PRHeadFormat = jsonFormat2(PRHead)
+  implicit val PRFormat = jsonFormat5(PR)
+
+  case class CreatePR(title:String, head:String, base:String, body:String)
+  case class PRCreated(number:Int)
+  implicit val createPRFormat = jsonFormat4(CreatePR)
+  implicit val PRCreatedFormat = jsonFormat1(PRCreated)
 }
 
 object GithubWebAPI {
   import GithubWebProtocol._
 
   val api = "https://api.github.com"
-  def ghPipeline(implicit system:ActorSystem, cx:ExecutionContext) = {
-    addHeader("Authorization", s"token ${sys.env("GITHUB_TOKEN")}") ~> sendReceive
+  def pipeline[T](implicit system:ActorSystem, cx:ExecutionContext, um:FromResponseUnmarshaller[T]) = {
+    addHeader("Authorization", s"token ${sys.env("GITHUB_TOKEN")}") ~>
+      sendReceive ~>
+      unmarshal[T]
   }
 
-  def mergePullRequest(org:String, proj:String, number:Int, sha:String)
+  def mergePR(org:String, proj:String, number:Int, sha:String)
                       (implicit sys:ActorSystem, cx:ExecutionContext) = {
-    val req = Put(s"$api/repos/$org/$proj/pulls/$number/merge", MergeRequest("", sha))
-    val pipeline = ghPipeline ~> unmarshal[Either[MergeFailure, MergeSuccess]]
-    pipeline(req)
+    val req = Put(s"$api/repos/$org/$proj/pulls/$number/merge", MergePR("", sha))
+    val p = pipeline[Either[MergePRFailure, MergePRSuccess]]
+    p(req)
+  }
+
+  def getPR(org:String, proj:String, number:Int)
+                    (implicit sys:ActorSystem, cx:ExecutionContext) = {
+    val req = Get(s"$api/repos/$org/$proj/pulls/$number")
+    val p = pipeline[PR]
+    p(req)
+  }
+
+  def createPR(org:String, proj:String, title:String, body:String, head:String, base:String)
+                       (implicit sys:ActorSystem, cx:ExecutionContext) = {
+    val req = Post(s"$api/repos/$org/$proj/pulls", CreatePR(title, head, base, body))
+    val p = pipeline[PRCreated]
+    p(req)
   }
 }
 
@@ -45,8 +72,21 @@ object GithubWebAPITester extends App {
   implicit val system = ActorSystem()
   import system.dispatcher
 
-  GithubWebAPI.mergePullRequest("dvmlls", "slakka-bot", 15, "1b8000d5cc663ee8974a72e88a2e6389c93a6cd9").onComplete {
-    case a:Any =>
+  val org = "dvmlls"
+  val proj = "slakka-bot"
+  val branch = "feature/web_pull_requests"
+
+  import GithubWebAPI._
+  import GithubWebProtocol._
+
+  val f = for (
+    PRCreated(number) <- createPR(org, proj, "web pull requests", "", branch, "master");
+    PR(_, state, PRHead(_, sha), _, _) <- getPR(org, proj, number);
+    result <- mergePR(org, proj, number, sha)
+  ) yield result
+
+  f.onComplete {
+    case a:Any => println(a)
       println(a)
       system.terminate()
       sys.exit()
