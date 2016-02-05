@@ -1,3 +1,7 @@
+import akka.actor.ActorSystem
+
+import scala.concurrent.{ExecutionContext, Future}
+
 object Commons extends App {
   import java.util.concurrent.TimeUnit
   import akka.actor.{Props, ActorSystem}
@@ -16,37 +20,54 @@ object Commons extends App {
   val h = system.actorOf(Props[GithubActor])
   val p = system.actorOf(Props[StatusPoller])
 
-  val branch = "feature/migrate-and-downgrade"
   val org = "WeConnect"
   val proj = "wework-anywhere"
   val heroku = "wework-anywhere"
+  val pr = 1234
 
   val f = for (
     RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
     _ <- h ? RepoCloned(repo);
-    GotSHA(branchSha) <- (g ? GetSHA(branch, "origin")).mapTo[GotSHA];
-    ciSucceeded <- (p ? StatusPoller.Poll(h, branchSha)).map {
-      case s:CISuccess => true
-      case a:Any => println(s"ci failed: $a"); false
-    } ;
-    if ciSucceeded;
+    poll = (sha:String) => (p ? StatusPoller.Poll(h, sha)).mapTo[CIStatus];
+    (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr, poll)
+    if branchResult.isRight;
+    _ <- g ? DeleteBranch(branchName, "origin");
     _ <- g ? Checkout("master");
-    _ <- g ? Merge(branch);
-    _ <- g ? Push("origin");
-    _ <- g ? DeleteBranch(branch, "origin");
+    _ <- g ? Pull();
     _ <- g ? AddRemote("production", s"git@heroku.com:$heroku.git");
     _ <- g ? Push("production")
-  ) yield (repo,branchSha,ciSucceeded)
+  ) yield (repo,(branchName, branchSha, branchResult))
 
   f.onComplete {
-    case Success((repo,sha,ciSucceeded)) =>
-      System.out.println(s"success: repo=$repo sha=$sha ciSucceeded=$ciSucceeded")
+    case Success(s) =>
+      System.out.println(s"success: $s")
       system.terminate()
       sys.exit()
     case Failure(ex) =>
-      System.err.println("failure: " + ex)
+      System.err.println(s"failure: $ex")
       system.terminate()
       sys.exit()
+  }
+}
+
+object Autobot {
+  import GithubActor._
+  import GithubWebAPI._
+  import GithubWebProtocol._
+
+  def autoMerge(org:String, proj:String, pr:Int, poll:String => Future[CIStatus])
+               (implicit sys:ActorSystem, ctx:ExecutionContext) = {
+    for (
+      (branchName, sha) <- getPR(org, proj, pr).flatMap {
+        case PR(_, "open", PRHead(branchName, sha), _, _) => Future { (branchName, sha) }
+        case PR(_, failed, _, _, _) => Future.failed(new Exception(s"pr not open: $failed"))
+      };
+      _ <- poll(sha).flatMap {
+        case s:CISuccess => Future { true }
+        case a:Any => Future.failed(new Exception(s"polling for CI status failed: $a"))
+      };
+      result <- mergePR(org, proj, pr, sha)
+    ) yield (branchName, sha, result)
   }
 }
 
@@ -55,8 +76,11 @@ object Spaceman extends App {
   import akka.actor.{Props, ActorSystem}
   import akka.util.Timeout
   import scala.util.{Failure, Success}
+
   import GitActor._
   import GithubActor._
+  import GithubWebAPI._
+  import GithubWebProtocol._
 
   import akka.pattern.ask
 
@@ -71,43 +95,32 @@ object Spaceman extends App {
   val org = "WeConnect"
   val proj = "spaceman"
   val heroku = "spaceman-production"
-  val branch = "bugfix/filter_move_out_ach_on_download"
+  val prNumber = 1234
   val jira = "BILL-391"
 
   val f = for (
     RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
     _ <- h ? RepoCloned(repo);
-    GotSHA(branchSha) <- (g ? GetSHA(branch, "origin")).mapTo[GotSHA];
-    ciSucceeded <- (p ? StatusPoller.Poll(h, branchSha)).map {
-      case s:CISuccess => true
-      case a:Any => println(s"ci failed: $a"); false
-    } ;
-    if ciSucceeded;
-    _ <- g ? Checkout("develop");
-    _ <- g ? Merge(branch);
-    _ <- g ? Push("origin");
-    _ <- g ? DeleteBranch(branch, "origin");
-    PullRequested(url) <- (h ? PullRequest(s"$jira: d2m", org, proj, "develop", "master")).mapTo[PullRequested];
-    GotSHA(developSha) <- (g ? GetSHA("develop", "origin")).mapTo[GotSHA];
-    ciSucceeded2 <- (p ? StatusPoller.Poll(h, developSha)).map {
-      case s:CISuccess => true
-      case a:Any => println(s"ci failed: $a"); false
-    } ;
-    if ciSucceeded2;
+    poll = (sha:String) => (p ? StatusPoller.Poll(h, sha)).mapTo[CIStatus];
+    (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, prNumber, poll)
+    if branchResult.isRight;
+    _ <- g ? DeleteBranch(branchName, "origin");
+    PRCreated(d2m) <- createPR(org, proj, s"$jira: d2m", "", "develop", "master");
+    (_, masterSha, masterResult) <- Autobot.autoMerge(org, proj, d2m, poll)
+    if masterResult.isRight;
     _ <- g ? Checkout("master");
-    _ <- g ? Merge("develop");
-    _ <- g ? Push("origin");
+    _ <- g ? Pull();
     _ <- g ? AddRemote("production", s"git@heroku.com:$heroku.git");
     _ <- g ? Push("production")
-  ) yield (repo,branchSha,ciSucceeded, ciSucceeded2, url)
+  ) yield (repo, (branchName, branchSha, branchResult), (d2m, masterSha, masterResult))
 
   f.onComplete {
-    case Success((repo,sha,ciSucceeded, ciSucceeded2, url)) =>
-      System.out.println(s"success: repo=$repo sha=$sha ciSucceeded=$ciSucceeded ciSucceeded2=$ciSucceeded2 url=$url")
+    case Success(s) =>
+      System.out.println(s"success: $s")
       system.terminate()
       sys.exit()
     case Failure(ex) =>
-      System.err.println("failure: " + ex)
+      System.err.println(s"failure: $ex")
       system.terminate()
       sys.exit()
   }

@@ -16,9 +16,6 @@ object GithubActor {
   case class CIPending() extends CIStatus
   case class CIError() extends CIStatus
   case class CIUnknown(status:String) extends CIStatus
-
-  case class PullRequest(title:String, org:String, proj:String, from:String, to:String)
-  case class PullRequested(url:String)
 }
 
 object StatusPoller {
@@ -101,28 +98,10 @@ class GithubActor extends Actor with ActorLogging {
     }
   }
 
-  def pullRequesting(requester:ActorRef):Receive = { log.debug("status -> pullRequesting")
-    var firstLine:Option[String] = None
-
-    {
-      case Finished(r:Int) =>
-        firstLine match {
-          case Some(line) => requester ! PullRequested(line.trim)
-          case None => requester ! Status.Failure(new Exception(s"couldn't open pull request: nothing returned, returnCode=$r"))
-        }
-
-        context.unbecome()
-      case StdOut(line) if firstLine.isEmpty => firstLine = Some(line.trim)
-    }
-  }
-
   def idle(repo:File):Receive = { log.debug("status -> idle"); {
     case CheckCIStatus(sha) =>
       processor ! Request(repo, s"hub ci-status $sha")
       context.become(checkingCIStatus(sender()), discardOld=false)
-    case PullRequest(title, org, proj, from, to) =>
-      processor ! Request(repo, Seq("hub", "pull-request", "-m", title, "-b", s"$org/$proj:$to", "-h", s"$org/$proj:$from"))
-      context.become(pullRequesting(sender()), discardOld=false)
   }}
 
   def receive = {
