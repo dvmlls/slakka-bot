@@ -1,6 +1,8 @@
 import java.util.concurrent.TimeUnit
 import akka.actor._
-
+import StatusActor._
+import GithubWebAPI._
+import akka.pattern.pipe
 import scala.concurrent.duration.Duration
 
 object StatusActor {
@@ -14,9 +16,6 @@ object StatusActor {
 }
 
 class StatusActor extends Actor with ActorLogging {
-  import StatusActor._
-  import GithubWebAPI._
-  import akka.pattern.pipe
   implicit val sys = context.system
   implicit val ctx = context.dispatcher
 
@@ -34,7 +33,6 @@ class StatusActor extends Actor with ActorLogging {
 }
 
 class StatusPoller extends Actor with ActorLogging {
-  import StatusActor._
   implicit val ctx = context.dispatcher
 
   val s = context.actorOf(Props[StatusActor])
