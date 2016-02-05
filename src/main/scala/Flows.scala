@@ -1,16 +1,15 @@
-import akka.actor.ActorSystem
+import java.util.concurrent.TimeUnit
+import akka.actor.{Props, ActorSystem}
+import akka.util.Timeout
+import scala.util.{Failure, Success}
+import GitActor._
+import GithubWebAPI._
+import GithubWebProtocol._
+import StatusActor._
+import akka.pattern.ask
 
-import scala.concurrent.{ExecutionContext, Future}
-
-object Commons extends App {
-  import java.util.concurrent.TimeUnit
-  import akka.actor.{Props, ActorSystem}
-  import akka.util.Timeout
-  import scala.util.{Failure, Success}
-  import GitActor._
-  import StatusActor._
-
-  import akka.pattern.ask
+object GithubFlow extends App {
+  val Array(org, proj, heroku, pr) = args
 
   implicit val system = ActorSystem()
   implicit val timeout = new Timeout(10, TimeUnit.MINUTES)
@@ -19,15 +18,10 @@ object Commons extends App {
   val g = system.actorOf(Props[GitActor])
   val p = system.actorOf(Props[StatusPoller])
 
-  val org = "WeConnect"
-  val proj = "wework-anywhere"
-  val heroku = "wework-anywhere"
-  val pr = 1234
-
   val f = for (
     RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
     poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus];
-    (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr, poll)
+    (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr.toInt, poll)
     if branchResult.isRight;
     _ <- g ? DeleteBranch(branchName, "origin");
     _ <- g ? Checkout("master");
@@ -48,39 +42,8 @@ object Commons extends App {
   }
 }
 
-object Autobot {
-  import StatusActor._
-  import GithubWebAPI._
-  import GithubWebProtocol._
-
-  def autoMerge(org:String, proj:String, pr:Int, poll:String => Future[CIStatus])
-               (implicit sys:ActorSystem, ctx:ExecutionContext) = {
-    for (
-      (branchName, sha) <- getPR(org, proj, pr).flatMap {
-        case PR(_, "open", PRHead(branchName, sha), _, _) => Future { (branchName, sha) }
-        case PR(_, failed, _, _, _) => Future.failed(new Exception(s"pr not open: $failed"))
-      };
-      _ <- poll(sha).flatMap {
-        case s:CISuccess => Future { true }
-        case a:Any => Future.failed(new Exception(s"polling for CI status failed: $a"))
-      };
-      result <- mergePR(org, proj, pr, sha)
-    ) yield (branchName, sha, result)
-  }
-}
-
-object Spaceman extends App {
-  import java.util.concurrent.TimeUnit
-  import akka.actor.{Props, ActorSystem}
-  import akka.util.Timeout
-  import scala.util.{Failure, Success}
-
-  import GitActor._
-  import GithubWebAPI._
-  import GithubWebProtocol._
-  import StatusActor._
-
-  import akka.pattern.ask
+object GitFlow extends App {
+  val Array(org, proj, heroku, pr, jira) = args
 
   implicit val system = ActorSystem()
   implicit val timeout = new Timeout(10, TimeUnit.MINUTES)
@@ -89,16 +52,10 @@ object Spaceman extends App {
   val g = system.actorOf(Props[GitActor])
   val p = system.actorOf(Props[StatusPoller])
 
-  val org = "WeConnect"
-  val proj = "spaceman"
-  val heroku = "spaceman-production"
-  val prNumber = 1234
-  val jira = "BILL-391"
-
   val f = for (
     RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
     poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus];
-    (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, prNumber, poll)
+    (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr.toInt, poll)
     if branchResult.isRight;
     _ <- g ? DeleteBranch(branchName, "origin");
     PRCreated(d2m) <- createPR(org, proj, s"$jira: d2m", "", "develop", "master");
@@ -117,6 +74,32 @@ object Spaceman extends App {
       sys.exit()
     case Failure(ex) =>
       System.err.println(s"failure: $ex")
+      system.terminate()
+      sys.exit()
+  }
+}
+
+object AutoMerge extends App {
+  val Array(org, proj, branch, prTitle) = args
+
+  implicit val system = ActorSystem()
+  import system.dispatcher
+  implicit val timeout = new Timeout(10, TimeUnit.MINUTES)
+
+  val g = system.actorOf(Props[GitActor])
+  val p = system.actorOf(Props[StatusPoller])
+
+  val f = for (
+    PRCreated(pr) <- createPR(org, proj, prTitle, "", branch, "master");
+    RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
+    poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus];
+    (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr, poll);
+    _ <- g ? DeleteBranch(branchName, "origin")
+  ) yield (branchName, branchSha, branchResult)
+
+  f.onComplete {
+    case a:Any => println(a)
+      println(a)
       system.terminate()
       sys.exit()
   }

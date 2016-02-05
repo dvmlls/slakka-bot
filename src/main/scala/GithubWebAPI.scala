@@ -66,9 +66,9 @@ object GithubWebAPI {
     p(req)
   }
 
-  def createPR(org:String, proj:String, title:String, body:String, head:String, base:String)
+  def createPR(org:String, proj:String, title:String, body:String, source:String, destination:String)
                        (implicit sys:ActorSystem, cx:ExecutionContext) = {
-    val req = Post(s"$api/repos/$org/$proj/pulls", CreatePR(title, head, base, body))
+    val req = Post(s"$api/repos/$org/$proj/pulls", CreatePR(title, source, destination, body))
     val p = pipeline[PRCreated]
     p(req)
   }
@@ -78,39 +78,5 @@ object GithubWebAPI {
     val req = Get(s"$api/repos/$org/$proj/commits/$sha/status")
     val p = pipeline[Status]
     p(req)
-  }
-}
-
-object GithubWebAPITester extends App {
-
-  implicit val system = ActorSystem()
-  import system.dispatcher
-  implicit val timeout = new Timeout(10, TimeUnit.MINUTES)
-
-  val org = "dvmlls"
-  val proj = "slakka-bot"
-  val branch = "feature/web_pull_requests"
-
-  import GitActor._
-  import Autobot._
-  import StatusActor._
-
-  val g = system.actorOf(Props[GitActor])
-  val p = system.actorOf(Props[StatusPoller])
-
-  import akka.pattern.ask
-
-  val f = for (
-    RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
-    poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus];
-    (branchName, branchSha, branchResult) <- autoMerge(org, proj, 20, poll);
-    _ <- g ? DeleteBranch(branchName, "origin")
-  ) yield (branchName, branchSha, branchResult)
-
-  f.onComplete {
-    case a:Any => println(a)
-      println(a)
-      system.terminate()
-      sys.exit()
   }
 }
