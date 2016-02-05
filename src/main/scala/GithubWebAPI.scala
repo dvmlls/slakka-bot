@@ -95,7 +95,7 @@ object GithubWebAPITester extends App {
     _ <- h ? RepoCloned(repo);
     poll = (sha:String) => (p ? StatusPoller.Poll(h, sha)).mapTo[CIStatus];
     (branchName, branchSha, branchResult) <- autoMerge(org, proj, 20, poll);
-    _ <- g ? DeleteBranch(branchName, "origin");
+    _ <- g ? DeleteBranch(branchName, "origin")
   ) yield (branchName, branchSha, branchResult)
 
   f.onComplete {
