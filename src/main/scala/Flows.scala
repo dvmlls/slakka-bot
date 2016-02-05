@@ -12,7 +12,7 @@ object GithubFlow extends App {
   val Array(org, proj, heroku, pr) = args
 
   implicit val system = ActorSystem()
-  implicit val timeout = new Timeout(10, TimeUnit.MINUTES)
+  implicit val timeout = new Timeout(15, TimeUnit.MINUTES)
   import system.dispatcher
 
   val g = system.actorOf(Props[GitActor])
@@ -46,7 +46,7 @@ object GitFlow extends App {
   val Array(org, proj, heroku, pr, jira) = args
 
   implicit val system = ActorSystem()
-  implicit val timeout = new Timeout(10, TimeUnit.MINUTES)
+  implicit val timeout = new Timeout(15, TimeUnit.MINUTES)
   import system.dispatcher
 
   val g = system.actorOf(Props[GitActor])
@@ -79,12 +79,12 @@ object GitFlow extends App {
   }
 }
 
-object AutoMerge extends App {
+object AutoMergeBranch extends App {
   val Array(org, proj, branch, prTitle) = args
 
   implicit val system = ActorSystem()
   import system.dispatcher
-  implicit val timeout = new Timeout(10, TimeUnit.MINUTES)
+  implicit val timeout = new Timeout(15, TimeUnit.MINUTES)
 
   val g = system.actorOf(Props[GitActor])
   val p = system.actorOf(Props[StatusPoller])
@@ -96,6 +96,30 @@ object AutoMerge extends App {
     (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr, poll);
     _ <- g ? DeleteBranch(branchName, "origin")
   ) yield (branchName, branchSha, branchResult)
+
+  f.onComplete {
+    case Success(s) =>
+      System.out.println(s"success: $s")
+      system.terminate()
+      sys.exit(0)
+    case Failure(ex) =>
+      System.err.println(s"failure: $ex")
+      system.terminate()
+      sys.exit(1)
+  }
+}
+
+object CommentTest extends App {
+  val Array(org, proj, pr, body) = args
+
+  implicit val system = ActorSystem()
+  import system.dispatcher
+  implicit val timeout = new Timeout(15, TimeUnit.MINUTES)
+
+  val g = system.actorOf(Props[GitActor])
+  val p = system.actorOf(Props[StatusPoller])
+
+  val f = comment(org, proj, pr.toInt, body)
 
   f.onComplete {
     case Success(s) =>

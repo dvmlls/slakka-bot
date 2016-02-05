@@ -37,6 +37,12 @@ object GithubWebProtocol extends DefaultJsonProtocol with MoreJsonProtocols {
 
   case class Status(state:String)
   implicit val statusFormat = jsonFormat1(Status)
+
+  case class CommentOnIssue(body:String)
+  implicit val commentOnIssueFormat = jsonFormat1(CommentOnIssue)
+  case class CommentedOnIssue(html_url:String)
+  implicit val commentedOnIssueFormat = jsonFormat1(CommentedOnIssue)
+
 }
 
 object GithubWebAPI {
@@ -74,6 +80,13 @@ object GithubWebAPI {
                (implicit sys:ActorSystem, cx:ExecutionContext) = {
     val req = Get(s"$api/repos/$org/$proj/commits/$sha/status")
     val p = pipeline[Status]
+    p(req)
+  }
+
+  def comment(org:String, proj:String, issue:Int, body:String)
+             (implicit sys:ActorSystem, cx:ExecutionContext) = {
+    val req = Post(s"$api/repos/$org/$proj/issues/$issue/comments", CommentOnIssue(body))
+    val p = pipeline[CommentedOnIssue]
     p(req)
   }
 }
