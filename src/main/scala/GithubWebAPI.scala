@@ -1,4 +1,7 @@
-import akka.actor.ActorSystem
+import java.util.concurrent.TimeUnit
+
+import akka.actor.{Props, ActorSystem}
+import akka.util.Timeout
 import spray.client.pipelining._
 import spray.httpx.unmarshalling.FromResponseUnmarshaller
 import spray.json._
@@ -71,19 +74,29 @@ object GithubWebAPITester extends App {
 
   implicit val system = ActorSystem()
   import system.dispatcher
+  implicit val timeout = new Timeout(10, TimeUnit.MINUTES)
 
   val org = "dvmlls"
   val proj = "slakka-bot"
   val branch = "feature/web_pull_requests"
 
-  import GithubWebAPI._
-  import GithubWebProtocol._
+  import GitActor._
+  import GithubActor._
+  import Autobot._
+
+  val g = system.actorOf(Props[GitActor])
+  val h = system.actorOf(Props[GithubActor])
+  val p = system.actorOf(Props[StatusPoller])
+
+  import akka.pattern.ask
 
   val f = for (
-    PRCreated(number) <- createPR(org, proj, "web pull requests", "", branch, "master");
-    PR(_, state, PRHead(_, sha), _, _) <- getPR(org, proj, number);
-    result <- mergePR(org, proj, number, sha)
-  ) yield result
+    RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
+    _ <- h ? RepoCloned(repo);
+    poll = (sha:String) => (p ? StatusPoller.Poll(h, sha)).mapTo[CIStatus];
+    (branchName, branchSha, branchResult) <- autoMerge(org, proj, 20, poll);
+    _ <- g ? DeleteBranch(branchName, "origin")
+  ) yield (branchName, branchSha, branchResult)
 
   f.onComplete {
     case a:Any => println(a)
