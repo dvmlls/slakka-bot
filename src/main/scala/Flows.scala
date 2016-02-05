@@ -78,3 +78,29 @@ object GitFlow extends App {
       sys.exit()
   }
 }
+
+object AutoMerge extends App {
+  val Array(org, proj, branch, prTitle) = args
+
+  implicit val system = ActorSystem()
+  import system.dispatcher
+  implicit val timeout = new Timeout(10, TimeUnit.MINUTES)
+
+  val g = system.actorOf(Props[GitActor])
+  val p = system.actorOf(Props[StatusPoller])
+
+  val f = for (
+    PRCreated(pr) <- createPR(org, proj, prTitle, "", branch, "master");
+    RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
+    poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus];
+    (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr, poll);
+    _ <- g ? DeleteBranch(branchName, "origin")
+  ) yield (branchName, branchSha, branchResult)
+
+  f.onComplete {
+    case a:Any => println(a)
+      println(a)
+      system.terminate()
+      sys.exit()
+  }
+}
