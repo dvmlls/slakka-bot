@@ -35,7 +35,7 @@ class GitActor extends Actor with ActorLogging {
     context.become(working(sender(), s"failed: $command"), discardOld=false)
   }
 
-  def ready(org:String, project:String, repo:File):Receive = { log.debug("state -> ready"); {
+  def ready(org:String, proj:String, repo:File):Receive = { log.debug("state -> ready"); {
     case Checkout(branch) => simpleTask(repo, s"git checkout $branch")
     case Push(remote) => simpleTask(repo, s"git push $remote")
     case DeleteBranch(branch, remote) => simpleTask(repo, s"git push $remote --delete $branch")
@@ -43,21 +43,21 @@ class GitActor extends Actor with ActorLogging {
     case Pull() => simpleTask(repo, "git pull")
   }}
 
-  def cloning(org:String, project:String, requester:ActorRef, repo:File):Receive = { log.debug("state -> cloning"); {
+  def cloning(org:String, proj:String, requester:ActorRef, repo:File):Receive = { log.debug("state -> cloning"); {
     case Finished(r:Int) if r == 0 =>
       requester ! RepoCloned(repo)
-      context.become(ready(org, project, repo))
+      context.become(ready(org, proj, repo))
     case Finished(r:Int) if r != 0 =>
       requester ! Status.Failure(new Exception(s"clone failed: $r"))
       context.unbecome()
   }}
 
   def empty:Receive = { log.debug("state -> empty"); {
-    case CloneRepo(org, project) =>
+    case CloneRepo(org, proj) =>
       Try { Files.createTempDirectory("repo").toFile } match {
         case Success(parent) =>
-          processor ! Request(parent, s"git clone git@github.com:$org/$project.git")
-          context.become(cloning(org, project, sender(), new File(parent, project)), discardOld = false)
+          processor ! Request(parent, s"git clone git@github.com:$org/$proj.git")
+          context.become(cloning(org, proj, sender(), new File(parent, proj)), discardOld = false)
         case Failure(ex) => sender() ! Status.Failure(ex)
       }
   }}
