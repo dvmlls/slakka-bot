@@ -8,7 +8,7 @@ object Commons extends App {
   import akka.util.Timeout
   import scala.util.{Failure, Success}
   import GitActor._
-  import GithubActor._
+  import StatusActor._
 
   import akka.pattern.ask
 
@@ -17,7 +17,6 @@ object Commons extends App {
   import system.dispatcher
 
   val g = system.actorOf(Props[GitActor])
-  val h = system.actorOf(Props[GithubActor])
   val p = system.actorOf(Props[StatusPoller])
 
   val org = "WeConnect"
@@ -27,8 +26,7 @@ object Commons extends App {
 
   val f = for (
     RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
-    _ <- h ? RepoCloned(repo);
-    poll = (sha:String) => (p ? StatusPoller.Poll(h, sha)).mapTo[CIStatus];
+    poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus];
     (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr, poll)
     if branchResult.isRight;
     _ <- g ? DeleteBranch(branchName, "origin");
@@ -51,7 +49,7 @@ object Commons extends App {
 }
 
 object Autobot {
-  import GithubActor._
+  import StatusActor._
   import GithubWebAPI._
   import GithubWebProtocol._
 
@@ -78,9 +76,9 @@ object Spaceman extends App {
   import scala.util.{Failure, Success}
 
   import GitActor._
-  import GithubActor._
   import GithubWebAPI._
   import GithubWebProtocol._
+  import StatusActor._
 
   import akka.pattern.ask
 
@@ -89,7 +87,6 @@ object Spaceman extends App {
   import system.dispatcher
 
   val g = system.actorOf(Props[GitActor])
-  val h = system.actorOf(Props[GithubActor])
   val p = system.actorOf(Props[StatusPoller])
 
   val org = "WeConnect"
@@ -100,8 +97,7 @@ object Spaceman extends App {
 
   val f = for (
     RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
-    _ <- h ? RepoCloned(repo);
-    poll = (sha:String) => (p ? StatusPoller.Poll(h, sha)).mapTo[CIStatus];
+    poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus];
     (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, prNumber, poll)
     if branchResult.isRight;
     _ <- g ? DeleteBranch(branchName, "origin");
