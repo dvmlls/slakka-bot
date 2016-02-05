@@ -34,11 +34,11 @@ object GithubFlow extends App {
     case Success(s) =>
       System.out.println(s"success: $s")
       system.terminate()
-      sys.exit()
+      sys.exit(0)
     case Failure(ex) =>
       System.err.println(s"failure: $ex")
       system.terminate()
-      sys.exit()
+      sys.exit(1)
   }
 }
 
@@ -71,11 +71,11 @@ object GitFlow extends App {
     case Success(s) =>
       System.out.println(s"success: $s")
       system.terminate()
-      sys.exit()
+      sys.exit(0)
     case Failure(ex) =>
       System.err.println(s"failure: $ex")
       system.terminate()
-      sys.exit()
+      sys.exit(1)
   }
 }
 
@@ -98,9 +98,13 @@ object AutoMerge extends App {
   ) yield (branchName, branchSha, branchResult)
 
   f.onComplete {
-    case a:Any => println(a)
-      println(a)
+    case Success(s) =>
+      System.out.println(s"success: $s")
       system.terminate()
-      sys.exit()
+      sys.exit(0)
+    case Failure(ex) =>
+      System.err.println(s"failure: $ex")
+      system.terminate()
+      sys.exit(1)
   }
 }
