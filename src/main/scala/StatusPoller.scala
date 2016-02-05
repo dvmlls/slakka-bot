@@ -1,4 +1,5 @@
 import java.util.concurrent.TimeUnit
+import akka.actor.Status
 import akka.actor._
 import StatusActor._
 import GithubWebAPI._
@@ -21,13 +22,14 @@ class StatusActor extends Actor with ActorLogging {
 
   def receive = {
     case CheckCIStatus(org, proj, sha) => getStatus(org, proj, sha)
-      .map(_.state match {
+      .map { case GithubWebProtocol.Status(status) => log.info(status); status }
+      .map {
         case "success" => CISuccess()
         case "failure" => CIFailure()
         case "pending" => CIPending()
         case "error" => CIError()
         case other => CIUnknown(other)
-      })
+      }
       .pipeTo(sender())
   }
 }

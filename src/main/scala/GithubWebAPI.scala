@@ -1,7 +1,4 @@
-import java.util.concurrent.TimeUnit
-
-import akka.actor.{Props, ActorSystem}
-import akka.util.Timeout
+import akka.actor.ActorSystem
 import spray.client.pipelining._
 import spray.httpx.unmarshalling.FromResponseUnmarshaller
 import spray.json._
