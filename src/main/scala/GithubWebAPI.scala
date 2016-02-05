@@ -12,7 +12,8 @@ trait MoreJsonProtocols {
   /*
    * http://stackoverflow.com/a/25417819/908042
    */
-  implicit def rootEitherFormat[A : RootJsonFormat, B : RootJsonFormat] = new RootJsonFormat[Either[A, B]] {
+  type RJF[T] = RootJsonFormat[T]
+  implicit def rootEitherFormat[A:RJF,B:RJF] = new RJF[Either[A, B]] {
     val format = DefaultJsonProtocol.eitherFormat[A, B]
     def write(either: Either[A, B]) = format.write(either)
     def read(value: JsValue) = format.read(value)
@@ -36,6 +37,9 @@ object GithubWebProtocol extends DefaultJsonProtocol with MoreJsonProtocols {
   case class PRCreated(number:Int)
   implicit val createPRFormat = jsonFormat4(CreatePR)
   implicit val PRCreatedFormat = jsonFormat1(PRCreated)
+
+  case class Status(state:String)
+  implicit val statusFormat = jsonFormat1(Status)
 }
 
 object GithubWebAPI {
@@ -68,6 +72,13 @@ object GithubWebAPI {
     val p = pipeline[PRCreated]
     p(req)
   }
+
+  def getStatus(org:String, proj:String, sha:String)
+               (implicit sys:ActorSystem, cx:ExecutionContext) = {
+    val req = Get(s"$api/repos/$org/$proj/commits/$sha/status")
+    val p = pipeline[Status]
+    p(req)
+  }
 }
 
 object GithubWebAPITester extends App {
@@ -81,19 +92,17 @@ object GithubWebAPITester extends App {
   val branch = "feature/web_pull_requests"
 
   import GitActor._
-  import GithubActor._
   import Autobot._
+  import StatusActor._
 
   val g = system.actorOf(Props[GitActor])
-  val h = system.actorOf(Props[GithubActor])
   val p = system.actorOf(Props[StatusPoller])
 
   import akka.pattern.ask
 
   val f = for (
     RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
-    _ <- h ? RepoCloned(repo);
-    poll = (sha:String) => (p ? StatusPoller.Poll(h, sha)).mapTo[CIStatus];
+    poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus];
     (branchName, branchSha, branchResult) <- autoMerge(org, proj, 20, poll);
     _ <- g ? DeleteBranch(branchName, "origin")
   ) yield (branchName, branchSha, branchResult)
