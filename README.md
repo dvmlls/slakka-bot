@@ -99,7 +99,7 @@ When they reply, it'll show up in the logs:
 
 To shut down your bot cleanly, terminate the actor system, which shuts down all the background threads:
 ```
-scala> Bot.system.terminate()
+scala> Bot.system.shutdown()
 scala> :quit
 [success] Total time: 208 s, completed Jan 29, 2016 11:22:29 AM
 $ 

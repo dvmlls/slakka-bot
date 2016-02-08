@@ -35,11 +35,11 @@ object GithubFlow extends App {
   f.onComplete {
     case Success(s) =>
       System.out.println(s"success: $s")
-      system.terminate()
+      system.shutdown()
       sys.exit(0)
     case Failure(ex) =>
       System.err.println(s"failure: $ex")
-      system.terminate()
+      system.shutdown()
       sys.exit(1)
   }
 }
@@ -72,11 +72,11 @@ object GitFlow extends App {
   f.onComplete {
     case Success(s) =>
       System.out.println(s"success: $s")
-      system.terminate()
+      system.shutdown()
       sys.exit(0)
     case Failure(ex) =>
       System.err.println(s"failure: $ex")
-      system.terminate()
+      system.shutdown()
       sys.exit(1)
   }
 }
@@ -102,11 +102,11 @@ object AutoMergeBranch extends App {
   f.onComplete {
     case Success(s) =>
       System.out.println(s"success: $s")
-      system.terminate()
+      system.shutdown()
       sys.exit(0)
     case Failure(ex) =>
       System.err.println(s"failure: $ex")
-      system.terminate()
+      system.shutdown()
       sys.exit(1)
   }
 }
@@ -126,11 +126,11 @@ object CommentTest extends App {
   f.onComplete {
     case Success(s) =>
       System.out.println(s"success: $s")
-      system.terminate()
+      system.shutdown()
       sys.exit(0)
     case Failure(ex) =>
       System.err.println(s"failure: $ex")
-      system.terminate()
+      system.shutdown()
       sys.exit(1)
   }
 }

@@ -53,7 +53,7 @@ object Bot extends App {
     f recover {
       case e:Exception =>
         log.error("couldn't start up", e)
-        system.terminate()
+        system.shutdown()
     } pipeTo self
 
     def connected(channels:List[Channel], users:List[Person], ims:List[IM]):Receive = { log.info("connecting")
