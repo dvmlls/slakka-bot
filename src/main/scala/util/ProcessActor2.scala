@@ -1,37 +1,10 @@
-import java.io.File
-import java.util.concurrent.TimeUnit
+package util
 
-import akka.actor._
-import akka.util.Timeout
+import java.io.{File, OutputStream}
+import akka.actor.{PoisonPill, ActorLogging, Actor}
 import scala.concurrent.Future
 import scala.io.Source
-import java.io.OutputStream
-
-import scala.sys.process.{ProcessIO, ProcessLogger, Process}
-
-object ProcessActor {
-  import scala.language.implicitConversions
-  implicit def string2seq(s:String):Seq[String] = s.split(' ')
-  case class Request(workingDirectory:File, args:Seq[String])
-  case class StdErr(s:String)
-  case class StdOut(s:String)
-  case class Finished(returnCode:Int)
-}
-
-class ProcessActor extends Actor with ActorLogging {
-  import ProcessActor._
-  implicit val c = context.dispatcher
-
-  def receive = {
-    case Request(workingDirectory, args) =>
-      val l = ProcessLogger(sender ! StdOut(_), sender ! StdErr(_))
-      val p = Process(args, workingDirectory)
-
-      log.debug("" + p)
-
-      sender() ! Finished(p ! l)
-  }
-}
+import scala.sys.process.{Process, ProcessIO}
 
 object ProcessActor2 {
   import scala.language.implicitConversions

@@ -1,6 +1,8 @@
+package util
+
 import javax.websocket.MessageHandler.Whole
 
-import spray.json.{JsonParser, JsValue}
+import spray.json.{JsValue, JsonParser}
 
 //import javax.websocket.MessageHandler.Partial
 import java.net.URI

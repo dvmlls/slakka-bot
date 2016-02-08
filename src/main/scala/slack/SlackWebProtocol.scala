@@ -1,3 +1,5 @@
+package slack
+
 import spray.json.{CollectionFormats, DefaultJsonProtocol}
 
 object SlackWebProtocol extends DefaultJsonProtocol with CollectionFormats {
