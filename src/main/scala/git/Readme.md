@@ -44,10 +44,10 @@ Create a shell script, executing with `-e` means it'll quit if it sees a non-zer
 ```
 #!/bin/sh -e
 
-sbt "runMain GithubFlow WeConnect wework-anywhere wework-anywhere 749"
-sbt "runMain GitFlow WeConnect spaceman spaceman-production 990 BILL-395"
-sbt "runMain GitFlow WeConnect spaceman spaceman-production 826 BILL-125"
-sbt "runMain GitFlow WeConnect spaceman spaceman-production 944 BILL-328"
-sbt "runMain GitFlow WeConnect spaceman spaceman-production 985 BILL-386"
-sbt "runMain GitFlow WeConnect spaceman spaceman-production 990 BILL-395"
+sbt "runMain git.GithubFlow WeConnect wework-anywhere wework-anywhere 749"
+sbt "runMain git.GitFlow WeConnect spaceman spaceman-production 990 BILL-395"
+sbt "runMain git.GitFlow WeConnect spaceman spaceman-production 826 BILL-125"
+sbt "runMain git.GitFlow WeConnect spaceman spaceman-production 944 BILL-328"
+sbt "runMain git.GitFlow WeConnect spaceman spaceman-production 985 BILL-386"
+sbt "runMain git.GitFlow WeConnect spaceman spaceman-production 990 BILL-395"
 ```
