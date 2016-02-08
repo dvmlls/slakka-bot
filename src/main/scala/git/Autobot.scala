@@ -1,7 +1,10 @@
-import akka.actor.ActorSystem
+package git
+
 import GithubWebAPI._
-import GithubWebProtocol._
-import StatusActor._
+import GithubWebProtocol.{PR, PRHead}
+import akka.actor.ActorSystem
+import git.StatusActor.{CISuccess, CIStatus, CIFailure}
+
 import scala.concurrent.{ExecutionContext, Future}
 
 object Autobot {

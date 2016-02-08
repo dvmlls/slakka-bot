@@ -1,3 +1,5 @@
+package git
+
 import java.util.concurrent.TimeUnit
 import akka.actor.{Props, ActorSystem}
 import akka.util.Timeout

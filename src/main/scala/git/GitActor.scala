@@ -1,9 +1,10 @@
+package git
+
 import java.io.File
 import java.nio.file.Files
-
-import ProcessActor._
 import akka.actor._
-
+import util.ProcessActor
+import util.ProcessActor._
 import scala.util.{Failure, Success, Try}
 
 object GitActor {

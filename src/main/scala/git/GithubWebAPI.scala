@@ -1,49 +1,10 @@
+package git
+
 import akka.actor.ActorSystem
 import spray.client.pipelining._
-import spray.httpx.unmarshalling.FromResponseUnmarshaller
-import spray.json._
-import spray.httpx.SprayJsonSupport._
+import spray.httpx.unmarshalling._
 import scala.concurrent.ExecutionContext
-
-trait MoreJsonProtocols {
-  /*
-   * http://stackoverflow.com/a/25417819/908042
-   */
-  type RJF[T] = RootJsonFormat[T]
-  implicit def rootEitherFormat[A:RJF,B:RJF] = new RJF[Either[A, B]] {
-    val format = DefaultJsonProtocol.eitherFormat[A, B]
-    def write(either: Either[A, B]) = format.write(either)
-    def read(value: JsValue) = format.read(value)
-  }
-}
-
-object GithubWebProtocol extends DefaultJsonProtocol with MoreJsonProtocols {
-  case class MergePR(commit_message:String, sha:String)
-  implicit val mergePRFormat = jsonFormat2(MergePR)
-  case class MergePRSuccess(message:String, merged:Boolean, sha:String)
-  case class MergePRFailure(message:String, documentation_url:String)
-  implicit val mergePRSuccessFormat = jsonFormat3(MergePRSuccess)
-  implicit val mergePRFailureFormat = jsonFormat2(MergePRFailure)
-
-  case class PRHead(ref:String, sha:String)
-  case class PR(number:Int, state:String, head:PRHead, mergeable:Option[Boolean], merged:Boolean)
-  implicit val PRHeadFormat = jsonFormat2(PRHead)
-  implicit val PRFormat = jsonFormat5(PR)
-
-  case class CreatePR(title:String, head:String, base:String, body:String)
-  case class PRCreated(number:Int)
-  implicit val createPRFormat = jsonFormat4(CreatePR)
-  implicit val PRCreatedFormat = jsonFormat1(PRCreated)
-
-  case class Status(state:String)
-  implicit val statusFormat = jsonFormat1(Status)
-
-  case class CommentOnIssue(body:String)
-  implicit val commentOnIssueFormat = jsonFormat1(CommentOnIssue)
-  case class CommentedOnIssue(html_url:String)
-  implicit val commentedOnIssueFormat = jsonFormat1(CommentedOnIssue)
-
-}
+import spray.httpx.SprayJsonSupport._
 
 object GithubWebAPI {
   import GithubWebProtocol._

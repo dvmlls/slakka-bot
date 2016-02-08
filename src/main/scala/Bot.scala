@@ -3,8 +3,10 @@ import java.util.concurrent.TimeUnit
 import akka.actor._
 import akka.util.Timeout
 import akka.pattern.pipe
+import slack.{SlackWebProtocol, SlackWebAPI, SlackRTProtocol}
 import SlackRTProtocol._
 import SlackWebProtocol._
+import util.WebSocketClient
 
 object Bot extends App {
   type Lookup[T] = String => Option[T]
