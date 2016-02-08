@@ -1,6 +1,6 @@
 scalaVersion := "2.11.7"
 
-scalacOptions ++= Seq("-deprecation", "-feature")
+scalacOptions ++= Seq("-deprecation", "-feature", "-target:jvm-1.7")
 
 libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % "1.12.2" % "test",

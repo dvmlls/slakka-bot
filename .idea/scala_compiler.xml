@@ -8,6 +8,9 @@
     <profile name="SBT 1" modules="slakka-bot">
       <option name="deprecationWarnings" value="true" />
       <option name="featureWarnings" value="true" />
+      <parameters>
+        <parameter value="-target:jvm-1.7" />
+      </parameters>
     </profile>
   </component>
 </project>
