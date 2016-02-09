@@ -2,6 +2,8 @@ scalaVersion := "2.11.7"
 
 scalacOptions ++= Seq("-deprecation", "-feature", "-target:jvm-1.7")
 
+sourcesInBase := false
+
 libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % "1.12.2" % "test",
   "io.spray" %% "spray-can" % "1.3.3",
