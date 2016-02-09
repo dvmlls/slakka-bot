@@ -69,7 +69,7 @@ object Process2Tester extends App {
   class Watcher extends Actor with ActorLogging {
     def watching(p:ActorRef):Receive = {
       case Terminated(johnConnor) =>
-        system.terminate()
+        system.shutdown()
         sys.exit()
       case a:Any => p ! a
     }
