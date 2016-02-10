@@ -63,7 +63,24 @@ In one terminal:
 ```
 $ export SLACK_TOKEN="[your slack token]"
 $ sbt console 2>>~/bot.log
-scala> :load Bot1.scala
+[info] Set current project to slakka-bot (in build file:/Users/dmills/src/slakka-bot/)
+[info] Starting scala interpreter...
+[info]
+Welcome to Scala version 2.11.7 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_60).
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala>
+```
+
+Now load a sample bot:
+```
+scala> :load EchoBot.scala
+Loading EchoBot.scala...
+import java.net.URI
+import java.util.concurrent.TimeUnit
+import akka.actor._
+...
 scala> 
 ```
 
@@ -71,11 +88,10 @@ In another terminal:
 ```
 $ tail -f ~/bot.log
 ...
-2016-01-29 18:45:25:178 [default-akka.actor.default-dispatcher-4] INFO Bot$Brain - found websocket URL, users (183), and channels (137)
-2016-01-29 18:45:25:179 [default-akka.actor.default-dispatcher-3] INFO Bot$Brain - connecting
-2016-01-29 18:45:25:179 [default-akka.actor.default-dispatcher-3] INFO WebSocketClient - connecting to: wss://ms510.slack-msgs.com/websocket/oa8J1-ksBX3FCEo1LtxIoVxNc8kE9kXkV2wPl3RqFKtYQhoveZS6SgXWKNYVEFj1do05JFCK1LpMT9oE_CkMWqmu61MIys29I5PL1tZ_2xkYNYqGMebv-0oKhdg03BHNn5x6A3qUoK6p-ncoAjT5zg==
-2016-01-29 18:45:25:886 [default-akka.actor.default-dispatcher-3] INFO WebSocketClient - connected
-2016-01-29 18:45:25:899 [default-akka.actor.default-dispatcher-3] INFO Bot$Brain - unhandled message: {"type":"hello"}
+2016-02-10 10:23:21:699 [default-akka.actor.default-dispatcher-3] INFO akka.event.slf4j.Slf4jLogger - Slf4jLogger started
+2016-02-10 10:23:21:710 [default-akka.actor.default-dispatcher-3] DEBUG akka.event.EventStream - logger log1-Slf4jLogger started
+2016-02-10 10:23:21:711 [default-akka.actor.default-dispatcher-3] DEBUG akka.actor.LocalActorRefProvider$SystemGuardian - now supervising Actor[akka://default/system/UnhandledMessageForwarder#654532009]
+2016-02-10 10:23:21:711 [default-akka.actor.default-dispatcher-3] DEBUG akka.event.EventStream - Default Loggers started
 ...
 ```
 
@@ -84,13 +100,11 @@ Send someone a direct message:
 scala> kernel ! SendIM("dave", "your face")
 ```
 
-![Imgur](http://i.imgur.com/YhidXhl.png)
+![Imgur](http://i.imgur.com/kqnDNz6.png)
 
 When they reply, it'll show up in the logs:
 ```
-2016-02-01 11:12:12:030 [default-akka.actor.default-dispatcher-4] INFO Bot$Brain - unhandled message: {"type":"user_typing","channel":"D0K3XHE3Y","user":"U06DF12SU"}
-2016-02-01 11:12:13:718 [default-akka.actor.default-dispatcher-4] INFO Bot$Brain - UserChat(dave,my face what?)
-2016-02-01 11:12:22:974 [default-akka.actor.default-dispatcher-4] INFO Bot$Brain - unhandled message: {"type":"reconnect_url","url":"wss://ms510.slack-msgs.com/websocket/OdLoJNQiyRcXmD07VIQ8qvr_IQuIOo7Az
+unhandled message from Actor[akka://default/user/kernel/slack#828626119]: MessageReceived(D0K3XHE3Y,U06DF12SU,no YOUR face)
 ```
 
 

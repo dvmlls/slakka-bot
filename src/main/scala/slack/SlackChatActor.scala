@@ -36,13 +36,12 @@ class SlackChatActor extends Actor with ActorLogging {
         case _ => context.parent ! json
       }
     case Disconnected() => context.become(disconnected)
-    case SendMessage(c, m) =>
-      slackClient ! Message("message", c, m, None).toJson
+    case SendMessage(c, m) => slackClient ! Message("message", c, m, None).toJson
   }
 
   def disconnected:Receive = {
-    case RTMStart(url) =>
-      slackClient ! new URI(url)
+    case uri:URI =>
+      slackClient ! uri
       context.become(connected)
   }
 
