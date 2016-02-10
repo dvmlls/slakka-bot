@@ -53,7 +53,9 @@ val Pattern = """[@]dvbt (.+)""".r
   case Pattern(test) => s"matches: $test"
   case _ => "doesn't match"
 }
+// MessageReceived(C0D0QE69K,U03P7GUMN,@dbvt has some sass)
 val myUserId = "U0K3W1BK3"
+val myUserName = "dvbt"
 val Mine = s""".*[<][@]$myUserId[>][: ]+(.+)""".r
 "<@U0K3W1BK3>: do some stuff" match {
   case Mine(message) => s"matched: $message"
