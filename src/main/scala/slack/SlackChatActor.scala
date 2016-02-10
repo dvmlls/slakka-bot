@@ -11,7 +11,7 @@ object SlackRTProtocol extends DefaultJsonProtocol with CollectionFormats {
   case class Base(`type`:Option[String])
   implicit val baseFormat = jsonFormat1(Base)
 
-  case class Message(`type`:String, channel:String, text:String, user:Option[String])
+  case class Message(`type`:String, channel:String, text:Option[String], user:Option[String])
   implicit val messageFormat = jsonFormat4(Message)
 }
 
@@ -31,12 +31,13 @@ class SlackChatActor extends Actor with ActorLogging {
       json.convertTo[Base] match {
         case Base(Some("message")) =>
           json.convertTo[Message] match {
-            case Message(_, channel, text, Some(user)) => context.parent ! MessageReceived(channel, user, text)
+            case Message(_, channel, Some(text), Some(user)) => context.parent ! MessageReceived(channel, user, text)
+            case m:Message => log.debug(s"received message I couldn't parse: $m")
           }
         case _ => context.parent ! json
       }
     case Disconnected() => context.become(disconnected)
-    case SendMessage(c, m) => slackClient ! Message("message", c, m, None).toJson
+    case SendMessage(c, m) => slackClient ! Message("message", c, Some(m), None).toJson
   }
 
   def disconnected:Receive = {
