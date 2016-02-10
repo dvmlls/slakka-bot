@@ -5,7 +5,6 @@ import akka.util.Timeout
 import akka.pattern.pipe
 import slack.IMService.IMOpened
 import slack.SlackChatActor.SendMessage
-import slack.SlackWebAPI.Request
 import slack.UserService.GotId2Name
 import slack.{UserService, IMService, SlackChatActor, SlackWebAPI}
 import slack.SlackWebProtocol._
@@ -23,7 +22,7 @@ class Kernel extends Actor with ActorLogging {
   val ims = context.actorOf(Props[IMService], "ims")
   val users = context.actorOf(Props[UserService], "users")
 
-  rtmStart(Request()).pipeTo(self)
+  rtmStart(Map()).pipeTo(self)
 
   def connected:Receive = { log.info("connected"); {
     case SendIM(username, message) =>
