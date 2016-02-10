@@ -1,7 +1,6 @@
 package slack
 
 import akka.actor.{ActorLogging, Actor}
-import slack.SlackWebAPI.Request
 import slack.SlackWebProtocol.{IMChannel, IMOpen}
 import akka.pattern.pipe
 
@@ -29,7 +28,7 @@ class IMService extends Actor with ActorLogging {
         id2channel.get(userId) match {
           case Some(channel) => sender() ! IMOpened(userId, channel)
           case None =>
-            val future = imOpen(Request(immutable.Map("user" -> userId)))
+            val future = imOpen(immutable.Map("user" -> userId))
               .map { case IMOpen(IMChannel(channelId)) => IMOpened(userId, channelId) }
 
             future.pipeTo(self)

@@ -1,7 +1,6 @@
 package slack
 
 import akka.actor.{Status, ActorRef, ActorLogging, Actor}
-import slack.SlackWebAPI.Request
 import slack.SlackWebProtocol.{User, UserList}
 import akka.pattern.pipe
 
@@ -19,7 +18,7 @@ class UserService extends Actor with ActorLogging {
 
   val users = SlackWebAPI.createPipeline[UserList]("users.list")
 
-  users(Request()).pipeTo(self)
+  users(Map()).pipeTo(self)
 
   def process(name:String, l:List[User], requester:ActorRef):Unit = {
     requester ! (l.find(_.name == name) match {
