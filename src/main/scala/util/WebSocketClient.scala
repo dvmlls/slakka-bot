@@ -54,13 +54,13 @@ class WebSocketClient extends Actor with ActorLogging {
     ClientManager.createClient().connectToServer(endpoint, config, server)
   }
 
-  def disconnected:Receive = { log.info("disconnected") ; {
+  def disconnected:Receive = { log.info("state -> disconnected") ; {
     case server:URI =>
       log.info(s"connecting to: $server")
       connect(server, context.parent)
   }}
 
-  def connected(session:Session):Receive = { log.info("connected") ; {
+  def connected(session:Session):Receive = { log.info("state -> connected") ; {
     case message:String =>
       log.debug(s"sending message: $message")
       session.getAsyncRemote.sendText(message)

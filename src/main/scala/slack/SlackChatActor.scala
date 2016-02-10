@@ -2,7 +2,6 @@ package slack
 
 import java.net.URI
 import akka.actor.{Props, ActorLogging, Actor}
-import slack.SlackWebProtocol._
 import spray.json.{CollectionFormats, DefaultJsonProtocol}
 import util.WebSocketClient
 import util.WebSocketClient.{Disconnected, Received}
@@ -25,7 +24,7 @@ class SlackChatActor extends Actor with ActorLogging {
   import SlackRTProtocol._
   val slackClient = context.actorOf(Props[WebSocketClient], "websocket")
 
-  def connected:Receive = {
+  def connected:Receive = { log.info("state -> connected"); {
     case Received(json) =>
       log.debug("" + json)
       json.convertTo[Base] match {
@@ -38,13 +37,13 @@ class SlackChatActor extends Actor with ActorLogging {
       }
     case Disconnected() => context.become(disconnected)
     case SendMessage(c, m) => slackClient ! Message("message", c, Some(m), None).toJson
-  }
+  }}
 
-  def disconnected:Receive = {
+  def disconnected:Receive = { log.info("state -> disconnected"); {
     case uri:URI =>
       slackClient ! uri
       context.become(connected)
-  }
+  }}
 
   def receive = disconnected
 }

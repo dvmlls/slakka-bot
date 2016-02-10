@@ -37,7 +37,7 @@ class UserService extends Actor with ActorLogging {
     case r:Request => process(r, l, sender())
   }}
 
-  def queueing:Receive = { log.info("state -> processing")
+  def queueing:Receive = { log.info("state -> queueing")
     val queue = mutable.Queue[(ActorRef, Request)]()
 
     {
