@@ -61,8 +61,8 @@ I'm going to use two terminals: one to interact with the bot, and the other to w
 
 In one terminal:
 ```
-$ export SLACK_TOKEN="[your slack token]"
-$ sbt console 2>>~/bot.log
+slakka-bot $ export SLACK_TOKEN="[your slack token]"
+slakka-bot $ sbt console 2>>~/bot.log
 [info] Set current project to slakka-bot (in build file:/Users/dmills/src/slakka-bot/)
 [info] Starting scala interpreter...
 [info]
