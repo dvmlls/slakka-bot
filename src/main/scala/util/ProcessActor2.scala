@@ -23,7 +23,7 @@ class ProcessActor2 extends Actor with ActorLogging {
   implicit val c = context.dispatcher
 
   def working(stdin:OutputStream):Receive = { log.debug("state -> working"); {
-    case WriteLine(s) => stdin.write(s"$s\n".getBytes)
+    case WriteLine(s) => stdin.write(s"$s\n".getBytes); stdin.flush()
     case Close() => stdin.close()
   }}
 

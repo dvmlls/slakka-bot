@@ -6,7 +6,7 @@ import akka.util.Timeout
 import akka.pattern.pipe
 import slack.IMService.IMOpened
 import slack.SlackChatActor.{MessageReceived, SendMessage}
-import slack.UserService.GotId2Name
+import slack.UserService.{UserId, All}
 import slack.{UserService, IMService, SlackChatActor, SlackWebAPI}
 import slack.SlackWebProtocol._
 
@@ -25,21 +25,21 @@ class Kernel extends Actor with ActorLogging {
 
   rtmStart(Map()).pipeTo(self)
 
-  def connected(myUserId:String, myUserName:String):Receive = { log.info("connected")
+  def connected(myUserId:String, myUserName:String):Receive = { log.info("state -> connected")
     val Mention = s""".*[<][@]$myUserId[>][: ]+(.+)""".r
 
     {
       case SendIM(username, message) =>
         for (
-          GotId2Name(userId, _) <- (users ? UserService.GetIdFromName(username)).mapTo[GotId2Name];
+          All(userId, _, _) <- (users ? UserService.UserName(username)).mapTo[All];
           IMOpened(_, channelId) <- (ims ? IMService.OpenIM(userId)).mapTo[IMOpened]
         ) slack ! SendMessage(channelId, message)
-      case m @ MessageReceived(channelId, userId, Mention(message)) if message.trim().length > 0 =>
-        slack ! SendMessage(channelId, s"no, $message")
+      case m @ MessageReceived(channelId, UserId(userId), Mention(message)) if message.trim().length > 0 =>
+        slack ! SendMessage(channelId, s"no, ${message.trim}")
     }
   }
 
-  def receive:Receive = { log.info("disconnected"); {
+  def receive:Receive = { log.info("state -> disconnected"); {
     case RTMStart(url, RTMSelf(id, name)) =>
       slack ! new URI(url)
       context.become(connected(id, name))

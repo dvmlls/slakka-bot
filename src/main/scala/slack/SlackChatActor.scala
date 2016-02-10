@@ -2,6 +2,7 @@ package slack
 
 import java.net.URI
 import akka.actor.{Props, ActorLogging, Actor}
+import slack.UserService.{UserId, UserIdentifier}
 import spray.json.{CollectionFormats, DefaultJsonProtocol}
 import util.WebSocketClient
 import util.WebSocketClient.{Disconnected, Received}
@@ -16,7 +17,7 @@ object SlackRTProtocol extends DefaultJsonProtocol with CollectionFormats {
 
 object SlackChatActor {
   case class SendMessage(channel:String, message:String)
-  case class MessageReceived(channel:String, from:String, message:String)
+  case class MessageReceived(channel:String, from:UserIdentifier, message:String)
 }
 
 class SlackChatActor extends Actor with ActorLogging {
@@ -30,7 +31,7 @@ class SlackChatActor extends Actor with ActorLogging {
       json.convertTo[Base] match {
         case Base(Some("message")) =>
           json.convertTo[Message] match {
-            case Message(_, channel, Some(text), Some(user)) => context.parent ! MessageReceived(channel, user, text)
+            case Message(_, channel, Some(text), Some(user)) => context.parent ! MessageReceived(channel, UserId(user), text)
             case m:Message => log.debug(s"received message I couldn't parse: $m")
           }
         case _ => context.parent ! json

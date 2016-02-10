@@ -7,10 +7,10 @@ import akka.pattern.pipe
 import scala.collection.mutable
 
 object UserService {
-  sealed trait Request
-  case class GetIdFromName(name:String) extends Request
-  case class GetNameFromId(id:String) extends Request
-  case class GotId2Name(id:String, name:String)
+  sealed trait UserIdentifier
+  case class UserName(name:String) extends UserIdentifier
+  case class UserId(id:String) extends UserIdentifier
+  case class All(id:String, name:String, email:Option[String])
 }
 
 class UserService extends Actor with ActorLogging {
@@ -22,26 +22,30 @@ class UserService extends Actor with ActorLogging {
 
   users(Map()).pipeTo(self)
 
-  def process(r:Request, l:List[User], requester:ActorRef):Unit = {
-    requester ! (
+  def process(r:UserIdentifier, l:List[User], requester:ActorRef):Unit = {
+    val result =
       (r match {
-        case GetIdFromName(name) => l.find(_.name == name)
-        case GetNameFromId(id) => l.find(_.id == id)
+        case UserName(name) => l.find(_.name == name)
+        case UserId(id) => l.find(_.id == id)
       }) match {
-        case Some(user) => GotId2Name(user.id, user.name)
+        case Some(user) => All(user.id, user.name, user.profile.email)
         case None => Status.Failure(new Exception(s"couldn't find user given evidence: $r"))
-      })
+      }
+
+    log.debug(s"mapped: $r -> $result")
+
+    requester ! result
   }
 
   def processing(l:List[User]):Receive = { log.info("state -> processing"); {
-    case r:Request => process(r, l, sender())
+    case r:UserIdentifier => process(r, l, sender())
   }}
 
   def queueing:Receive = { log.info("state -> queueing")
-    val queue = mutable.Queue[(ActorRef, Request)]()
+    val queue = mutable.Queue[(ActorRef, UserIdentifier)]()
 
     {
-      case r:Request => queue.enqueue((sender(), r))
+      case r:UserIdentifier => queue.enqueue((sender(), r))
       case UserList(l) =>
         queue.foreach { case (requester, name) => process(name, l, requester) }
         context.become(processing(l))
