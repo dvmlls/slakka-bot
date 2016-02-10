@@ -55,8 +55,9 @@ class WebSocketClient extends Actor with ActorLogging {
   }
 
   def disconnected:Receive = { log.info("disconnected") ; {
-    case (server:URI, client:ActorRef) => log.info(s"connecting to: $server")
-      connect(server, client)
+    case server:URI =>
+      log.info(s"connecting to: $server")
+      connect(server, context.parent)
   }}
 
   def connected(session:Session):Receive = { log.info("connected") ; {

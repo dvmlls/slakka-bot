@@ -4,7 +4,7 @@
 
 Slack chat bot built with akka.  
 
-## Prerequisites
+## Dependencies
 
 ### Java
 
@@ -62,11 +62,8 @@ I'm going to use two terminals: one to interact with the bot, and the other to w
 In one terminal:
 ```
 $ export SLACK_TOKEN="[your slack token]"
-$ sbt 2>>~/bot.log
-[info] Set current project to slakka-bot (in build file:/Users/dmills/src/slakka-bot/)
-> console 
-[info] Starting scala interpreter...
-scala> Bot.main(null)
+$ sbt console 2>>~/bot.log
+scala> :load Bot1.scala
 scala> 
 ```
 
@@ -84,7 +81,7 @@ $ tail -f ~/bot.log
 
 Send someone a direct message:
 ```
-scala> Bot.brain ! Bot.UserChat("dave", "your face")
+scala> kernel ! SendIM("dave", "your face")
 ```
 
 ![Imgur](http://i.imgur.com/YhidXhl.png)
@@ -97,10 +94,9 @@ When they reply, it'll show up in the logs:
 ```
 
 
-To shut down your bot cleanly, terminate the actor system, which shuts down all the background threads:
+To shut down your bot cleanly, terminate the actor system first, shutting down all the background threads:
 ```
-scala> Bot.system.shutdown()
-scala> :quit
+scala> system.shutdown(); sys.exit()
 [success] Total time: 208 s, completed Jan 29, 2016 11:22:29 AM
 $ 
 ```

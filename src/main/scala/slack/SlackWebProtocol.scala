@@ -31,11 +31,3 @@ object SlackWebProtocol extends DefaultJsonProtocol with CollectionFormats {
   implicit val imFormat = jsonFormat2(IM)
   implicit val imListFormat = jsonFormat1(IMList)
 }
-
-object SlackRTProtocol extends DefaultJsonProtocol with CollectionFormats {
-  case class Base(`type`:Option[String])
-  implicit val baseFormat = jsonFormat1(Base)
-
-  case class Message(`type`:String, channel:String, text:String)
-  implicit val messageFormat = jsonFormat3(Message)
-}
