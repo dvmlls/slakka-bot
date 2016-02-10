@@ -42,22 +42,36 @@ succeeds.filter(_.contains("cats")).map(_.toUpperCase).foreach(println)
 Await.ready(fails, Duration.Inf)
 Await.ready(succeeds, Duration.Inf)
 Thread.sleep(1000)
-// for comprehensions
-val Pattern = """[@]dvbt (.+)""".r
-"hello" match {
-  case Pattern(test) => s"matches: $test"
+
+// regexes
+
+val punctuation = " ,.:!?"
+val myUserId = "U0K3W1BK3"
+val myUserName = "dvbt"
+val IdMention = s""".*[<][@]$myUserId[>][$punctuation]+(.+)""".r
+//val NameMention = s""".*[@]$myUserName[$punctuation]+(.+)""".r
+val NameMention = s"""[@]dvbt (.+)""".r
+"<@U0K3W1BK3>: do some stuff" match {
+  case NameMention(message) => s"name match: $message"
+  case IdMention(message) => s"id match: $message"
   case _ => "doesn't match"
 }
 
-"@dvbt your face" match {
-  case Pattern(test) => s"matches: $test"
+"@dbvt has some sass" match {
+  case NameMention(message) => s"name match: $message"
+  case IdMention(message) => s"id match: $message"
   case _ => "doesn't match"
 }
-// MessageReceived(C0D0QE69K,U03P7GUMN,@dbvt has some sass)
-val myUserId = "U0K3W1BK3"
-val myUserName = "dvbt"
-val Mine = s""".*[<][@]$myUserId[>][: ]+(.+)""".r
-"<@U0K3W1BK3>: do some stuff" match {
-  case Mine(message) => s"matched: $message"
+
+val GithubFlowPattern = """.*GithubFlow ([^ ]+) ([^ ]+) ([^ ]+) ([\d]+) ([^ ]+)""".r
+val m = "<@U0K3W1BK3>: GithubFlow WeConnect spaceman spaceman-production 1234 BILL-123"
+m match {
+  case NameMention(message) => s"name match: $message"
+  case IdMention(GithubFlowPattern(a, b, c, d, e)) => s"id match: $a $b $c $d $e"
   case _ => "doesn't match"
+}
+
+"GithubFlow WeConnect spaceman spaceman-production 1234 BILL-123" match {
+  case GithubFlowPattern(a,b,c,d,e) => (a,b,c,d,e)
+  case _ => "no match"
 }

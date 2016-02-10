@@ -6,7 +6,7 @@ import akka.util.Timeout
 import akka.pattern.pipe
 import slack.IMService.IMOpened
 import slack.SlackChatActor.{MessageReceived, SendMessage}
-import slack.UserService.GotId2Name
+import slack.UserService.{UserName, UserId, All}
 import slack.{UserService, IMService, SlackChatActor, SlackWebAPI}
 import slack.SlackWebProtocol._
 
@@ -14,6 +14,8 @@ implicit val system = ActorSystem()
 implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
 import system.dispatcher
 import akka.pattern.ask
+
+val authorized = List("dave")
 
 case class SendIM(username:String, message:String)
 
@@ -31,10 +33,15 @@ class Kernel extends Actor with ActorLogging {
     {
       case SendIM(username, message) =>
         for (
-          GotId2Name(userId, _) <- (users ? UserService.GetIdFromName(username)).mapTo[GotId2Name];
+          All(userId, _, _) <- (users ? UserService.UserName(username)).mapTo[All];
           IMOpened(_, channelId) <- (ims ? IMService.OpenIM(userId)).mapTo[IMOpened]
         ) slack ! SendMessage(channelId, message)
-      case m @ MessageReceived(channelId, userId, Mention(message)) if message.trim().length > 0 =>
+      case m @ MessageReceived(channelId, UserId(userId), Mention(message)) if message.trim().length > 0 =>
+        (users ? UserId(userId)).mapTo[All]
+          .map { case All(_, name, _) => MessageReceived(channelId, UserName(name), message) }
+            .pipeTo(self)
+      case m @ MessageReceived(channelId, UserName(username), message)
+          if authorized.nonEmpty && authorized.contains(username) =>
         slack ! SendMessage(channelId, s"no, $message")
     }
   }
