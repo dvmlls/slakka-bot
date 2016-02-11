@@ -1,77 +1,68 @@
-import scala.util.{Failure, Try, Success}
-def print2(f: => Any): Unit = {
-  Try {
-    f
-  } match {
-    case Success(a) => println("> " + a)
-    case Failure(x) => println("! " + x)
-  }
+var section = ""
+section = "--------------------------"
+section = "|      CASE CLASSES      |"
+section = "--------------------------"
+trait SockLength
+case object Crew extends SockLength
+case object Ankle extends SockLength
+case object Knee extends SockLength
+case class Sock (length:SockLength, isArgyle:Boolean)
+val mine = Sock(Ankle, isArgyle=true)
+mine match {
+  case Sock(_, true) => "you silly"
+  case _ => "ok then"
 }
-
-// options
-val empty:Option[String] = None
-val full:Option[String] = Some("hello!")
-empty.foreach(s => print2(s))
-full.foreach(s => print2(s))
-
-empty.map(_.toUpperCase).foreach(s => print2(s))
-full.map(_.toUpperCase).foreach(s => print2(s))
-empty.filter(_.contains("cats")).map(_.toUpperCase).foreach(s => print2(s))
-full.filter(_.contains("cats")).map(_.toUpperCase).foreach(s => print2(s))
-// case classes
-case class Cat(name:String, superFluffy:Boolean)
-val mc = Cat("Mister Cuddles", superFluffy=false)
-val se = Cat("Senor Esnuggle", superFluffy=true)
-
-print2 { se match { case Cat(name, superFluffy) if superFluffy => name  } }
-print2 { mc match { case Cat(name, superFluffy) if superFluffy => name  } }
-// futures
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-val fails:Future[String] = Future.failed(new Exception("goodbye."))
-val succeeds = Future { "hello!" }
-print(succeeds)
-print(fails)
-print(succeeds.map(_.toUpperCase))
-print(fails.map(_.toUpperCase))
-fails.filter(_.contains("cats")).map(_.toUpperCase).foreach(println)
-succeeds.filter(_.contains("cats")).map(_.toUpperCase).foreach(println)
-Await.ready(fails, Duration.Inf)
-Await.ready(succeeds, Duration.Inf)
-Thread.sleep(1000)
-
-// regexes
-
+val yours = Sock(Crew, isArgyle = false)
+val mine2 = Sock(Ankle, isArgyle = true)
+mine == yours
+mine == mine2
+mine eq mine2 // reference equality
+section = "--------------------------"
+section = "|   PARTIAL FUNCTIONS    |"
+section = "--------------------------"
+import scala.util.Try
+Try { 4 / 0 }
+def divide(numerator:Double, dominator:Double) = dominator match {
+  case d:Double if d != 0 => numerator / dominator
+}
+Try { divide(4,0) }
+val div:PartialFunction[(Double,Double),Double] = {
+  case (numerator:Double, dominator:Double) if dominator != 0 =>
+    numerator / dominator
+}
+Try { div(4,0) }
+val safeDiv:PartialFunction[(Double,Double),Double] =
+  div orElse { case _ => Double.NegativeInfinity }
+safeDiv(4,0)
+section = "--------------------------"
+section = "|   FOR COMPREHENSIONS   |"
+section = "--------------------------"
+for (i <- 0 until 10) {
+  print(i)
+}
+for (i <- 1 to 5) yield i
+for (x <- List('a', 'b', 'c'); y <- 1 to 3) yield s"$x$y"
+for (
+  x <- List('m', 'n', 'o');
+  y <- 1 to 5
+  if y % 2 == 0
+) yield s"[$x,$y]"
+List('m', 'n', 'o')
+  .flatMap(x => (1 to 5).filter(_ % 2 == 0).map(y => s"[$x,$y]"))
+section = "--------------------------"
+section = "|   PATTERN MATCHING     |"
+section = "--------------------------"
 val punctuation = " ,.:!?"
 val myUserId = "U0K3W1BK3"
-val myUserName = "dvbt"
 val IdMention = s""".*[<][@]$myUserId[>][$punctuation]+(.+)""".r
-//val NameMention = s""".*[@]$myUserName[$punctuation]+(.+)""".r
 val NameMention = s"""[@]dvbt (.+)""".r
 "<@U0K3W1BK3>: do some stuff" match {
-  case NameMention(message) => s"name match: $message"
   case IdMention(message) => s"id match: $message"
   case _ => "doesn't match"
 }
-
-"@dbvt has some sass" match {
-  case NameMention(message) => s"name match: $message"
-  case IdMention(message) => s"id match: $message"
-  case _ => "doesn't match"
-}
-
 val GithubFlowPattern = """.*GithubFlow ([^ ]+) ([^ ]+) ([^ ]+) ([\d]+) ([^ ]+)""".r
 val m = "<@U0K3W1BK3>: GithubFlow WeConnect spaceman spaceman-production 1234 BILL-123"
 m match {
-  case NameMention(message) => s"name match: $message"
   case IdMention(GithubFlowPattern(a, b, c, d, e)) => s"id match: $a $b $c $d $e"
   case _ => "doesn't match"
-}
-
-"GithubFlow WeConnect spaceman spaceman-production 1234 BILL-123" match {
-  case GithubFlowPattern(a,b,c,d,e) => (a,b,c,d,e)
-  case _ => "no match"
 }
