@@ -71,3 +71,20 @@ m match {
     s"id+flow match: $a $b $c $d $e"
   case _ => "doesn't match"
 }
+
+object MyExtractor {
+  def unapply(s:String):Option[(Int,Boolean)] = s match {
+    case "Dave rocks my socks" => Some((1, true))
+    case _ => None
+  }
+}
+
+"Dave rocks my socks" match {
+  case MyExtractor(i, b) => s"he really is number $i, which is $b"
+  case _ => "boo hoo"
+}
+
+"Karl and his big fat face" match {
+  case MyExtractor(i, b) => s"he really is number $i, which is $b"
+  case _ => "boo hoo"
+}

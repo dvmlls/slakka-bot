@@ -4,10 +4,11 @@ import java.util.concurrent.TimeUnit
 import akka.actor._
 import akka.util.Timeout
 import akka.pattern.pipe
+import slack.ChannelService.{ChannelName, ChannelId}
 import slack.IMService.IMOpened
 import slack.SlackChatActor.{MessageReceived, SendMessage}
-import slack.UserService.{UserId, All}
-import slack.{UserService, IMService, SlackChatActor, SlackWebAPI}
+import slack.UserService.{UserName, UserId}
+import slack._
 import slack.SlackWebProtocol._
 
 implicit val system = ActorSystem()
@@ -16,12 +17,14 @@ import system.dispatcher
 import akka.pattern.ask
 
 case class SendIM(username:String, message:String)
+case class ChannelChat(channelName:String, message:String)
 
 class Kernel extends Actor with ActorLogging {
   val rtmStart = SlackWebAPI.createPipeline[RTMStart]("rtm.start")
   val slack = context.actorOf(Props[SlackChatActor], "slack")
   val ims = context.actorOf(Props[IMService], "ims")
   val users = context.actorOf(Props[UserService], "users")
+  val channels = context.actorOf(Props[ChannelService], "channels")
 
   rtmStart(Map()).pipeTo(self)
 
@@ -31,11 +34,20 @@ class Kernel extends Actor with ActorLogging {
     {
       case SendIM(username, message) =>
         for (
-          All(userId, _, _) <- (users ? UserService.UserName(username)).mapTo[All];
+          UserService.All(userId, _, _) <- (users ? UserName(username)).mapTo[UserService.All];
           IMOpened(_, channelId) <- (ims ? IMService.OpenIM(userId)).mapTo[IMOpened]
         ) slack ! SendMessage(channelId, message)
-      case m @ MessageReceived(channelId, UserId(userId), Mention(message)) if message.trim().length > 0 =>
+      case ChannelChat(channelName, message) =>
+        for (
+          ChannelService.All(channelId, _) <- (channels ? ChannelName(channelName)).mapTo[ChannelService.All]
+        ) slack ! SendMessage(channelId, message)
+      case m @ MessageReceived(ChannelId(channelId), UserId(userId), Mention(message)) if message.trim().length > 0 =>
         slack ! SendMessage(channelId, s"no, ${message.trim}")
+      case MessageReceived(channel, UserId(userId), message) =>
+        (users ? UserId(userId))
+          .mapTo[UserService.All]
+          .map { case UserService.All(_, userName, _) => MessageReceived(channel, UserName(userName), message) }
+          .pipeTo(self)
     }
   }
 

@@ -8,9 +8,10 @@ import scala.collection.mutable
 
 object UserService {
   sealed trait UserIdentifier
-  case class UserName(name:String) extends UserIdentifier
-  case class UserId(id:String) extends UserIdentifier
-  case class All(id:String, name:String, email:Option[String])
+  sealed trait PartialUserIdentifier extends UserIdentifier
+  case class UserName(name:String) extends PartialUserIdentifier
+  case class UserId(id:String) extends PartialUserIdentifier
+  case class All(id:String, name:String, email:Option[String]) extends UserIdentifier
 }
 
 class UserService extends Actor with ActorLogging {
@@ -22,7 +23,7 @@ class UserService extends Actor with ActorLogging {
 
   users(Map()).pipeTo(self)
 
-  def process(r:UserIdentifier, l:List[User], requester:ActorRef):Unit = {
+  def process(r:PartialUserIdentifier, l:List[User], requester:ActorRef):Unit = {
     val result =
       (r match {
         case UserName(name) => l.find(_.name == name)
@@ -38,14 +39,14 @@ class UserService extends Actor with ActorLogging {
   }
 
   def processing(l:List[User]):Receive = { log.info("state -> processing"); {
-    case r:UserIdentifier => process(r, l, sender())
+    case r:PartialUserIdentifier => process(r, l, sender())
   }}
 
   def queueing:Receive = { log.info("state -> queueing")
-    val queue = mutable.Queue[(ActorRef, UserIdentifier)]()
+    val queue = mutable.Queue[(ActorRef, PartialUserIdentifier)]()
 
     {
-      case r:UserIdentifier => queue.enqueue((sender(), r))
+      case r:PartialUserIdentifier => queue.enqueue((sender(), r))
       case UserList(l) =>
         queue.foreach { case (requester, name) => process(name, l, requester) }
         context.become(processing(l))

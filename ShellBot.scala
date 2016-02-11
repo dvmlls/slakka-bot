@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor._
 import akka.util.Timeout
 import akka.pattern.pipe
+import slack.ChannelService.ChannelId
 import slack.IMService.IMOpened
 import slack.SlackChatActor.{MessageReceived, SendMessage}
 import slack.UserService.{UserName, UserId, All}
@@ -27,11 +28,12 @@ class Kernel extends Actor with ActorLogging {
 
   import util.ProcessActor2._
 
-
   rtmStart(Map()).pipeTo(self)
 
   def running(process:ActorRef, desiredUsername:String, desiredChannelId:String):Receive = { log.info("state -> running"); {
-    case m @ MessageReceived(channelId, UserName(username), message) if desiredUsername == username && channelId == desiredChannelId =>
+    case m @ MessageReceived(ChannelId(channelId), UserName(username), message)
+      if desiredUsername == username && channelId == desiredChannelId =>
+
       process ! WriteLine(message)
     case StdOut(s) if s.trim.length > 0 => slack ! SendMessage(desiredChannelId, s"`$s`")
     case StdErr(s) if s.trim.length > 0 => slack ! SendMessage(desiredChannelId, s"_`$s`_")
@@ -54,7 +56,7 @@ class Kernel extends Actor with ActorLogging {
     val Mention = s""".*[<][@]$myUserId[>][: ]+(.+)""".r
 
     {
-      case m @ MessageReceived(channelId, UserName(username), Mention(message)) if authorized.contains(username) =>
+      case m @ MessageReceived(ChannelId(channelId), UserName(username), Mention(message)) if authorized.contains(username) =>
 
 
         val process = context.actorOf(Props[util.ProcessActor2])
