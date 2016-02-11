@@ -14,14 +14,14 @@ import slack.SlackWebProtocol._
 implicit val system = ActorSystem()
 implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
 import system.dispatcher
-import akka.pattern.ask
+import akka.pattern.{ask,pipe}
 
 case class SendIM(username:String, message:String)
 case class ChannelChat(channelName:String, message:String)
 
 class Kernel extends Actor with ActorLogging {
   val rtmStart = SlackWebAPI.createPipeline[RTMStart]("rtm.start")
-  val channelJoin = SlackWebAPI.createPipeline[ChannelJoin]("channel.join")
+  val channelJoin = SlackWebAPI.createPipeline[ChannelJoin]("channels.join")
 
   val slack = context.actorOf(Props[SlackChatActor], "slack")
   val ims = context.actorOf(Props[IMService], "ims")
@@ -35,15 +35,16 @@ class Kernel extends Actor with ActorLogging {
 
     {
       case SendIM(username, message) =>
-        for (
-          UserService.All(userId, _, _) <- (users ? UserName(username)).mapTo[UserService.All];
-          IMOpened(_, channelId) <- (ims ? IMService.OpenIM(userId)).mapTo[IMOpened]
-        ) slack ! SendMessage(channelId, message)
+        (users ? UserName(username))
+          .mapTo[UserService.All]
+          .flatMap { case UserService.All(userId, _, _) => (ims ? IMService.OpenIM(userId)).mapTo[IMOpened] }
+          .map { case IMOpened(_, channelId) => SendMessage(channelId, message) }
+          .pipeTo(slack)
       case ChannelChat(channelName, message) =>
-        for (
-          _ <- channelJoin(Map("name" -> channelName));
-          ChannelService.All(channelId, _) <- (channels ? ChannelName(channelName)).mapTo[ChannelService.All]
-        ) slack ! SendMessage(channelId, message)
+        (channels ? ChannelName(channelName))
+          .mapTo[ChannelService.All]
+          .map { case ChannelService.All(channelId, _) => SendMessage(channelId, message)}
+          .pipeTo(slack)
       case m @ MessageReceived(ChannelId(channelId), UserId(userId), Mention(message)) if message.trim().length > 0 =>
         slack ! SendMessage(channelId, s"no, ${message.trim}")
       case MessageReceived(channel, UserId(userId), message) =>
