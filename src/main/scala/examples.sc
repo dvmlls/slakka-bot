@@ -59,9 +59,15 @@ val IdMention = s""".*[<][@]$myUserId[>][$punctuation]+(.+)""".r
   case IdMention(message) => s"id match: $message"
   case _ => "doesn't match"
 }
+"@dvbt: do some stuff" match {
+  case IdMention(message) => s"id match: $message"
+  case _ => "doesn't match"
+}
+
 val GithubFlowPattern = """.*GithubFlow ([^ ]+) ([^ ]+) ([^ ]+) ([\d]+) ([^ ]+)""".r
 val m = "<@U0K3W1BK3>: GithubFlow WeConnect spaceman spaceman-production 1234 BILL-123"
 m match {
-  case IdMention(GithubFlowPattern(a, b, c, d, e)) => s"id match: $a $b $c $d $e"
+  case IdMention(GithubFlowPattern(a, b, c, d, e)) =>
+    s"id+flow match: $a $b $c $d $e"
   case _ => "doesn't match"
 }
