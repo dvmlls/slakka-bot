@@ -18,24 +18,30 @@ class Throttle extends Actor with ActorLogging {
   implicit val ctx = context.system.dispatcher
   implicit val system = context.system
 
+  def process(queue:mutable.Queue[SendMessage], target:ActorRef): Unit = {
+    queue
+      .groupBy(_.channel)
+      .foreach {
+        case (channel, messages) => target ! SendMessage(channel, messages.map(_.message).toList.mkString("\n"))
+      }
+    context.become(idle(target))
+  }
+
   def throttling(target:ActorRef, timer:Cancellable, initial:SendMessage):Receive = {
     val queue = mutable.Queue[SendMessage](initial)
     var currentTimer = timer
     log.info("state -> throttling"); {
     case m:SendMessage =>
-      // store the message in a queue
       queue.enqueue(m)
-      // reset the timer
       timer.cancel()
-      val newTimer = context.system.scheduler.scheduleOnce(Duration.create(1, TimeUnit.SECONDS), self, Send())
-      currentTimer = newTimer
+      if (queue.size < 25) {
+        val newTimer = context.system.scheduler.scheduleOnce(Duration.create(1, TimeUnit.SECONDS), self, Send())
+        currentTimer = newTimer
+      } else {
+        process(queue, target)
+      }
     case Send() =>
-      // send all my messages to the target
-      queue.groupBy(_.channel).foreach {
-        case (channel, messages) => target ! SendMessage(channel, messages.map(_.message).toList.mkString("\n")) }
-
-      // go back to idle
-      context.become(idle(target))
+      process(queue, target)
   }}
 
   def idle(target:ActorRef):Receive = { log.info("state -> idle"); {
