@@ -38,6 +38,9 @@ class Kernel extends Actor with ActorLogging {
     case Finished(returnCode) =>
       slack ! SendMessage(desiredChannelId, s"process exited with code: `$returnCode`")
       context.unbecome()
+    case Status.Failure(ex) =>
+      slack ! SendMessage(desiredChannelId, s"_process exited abnormally: `$ex`_")
+      context.unbecome()
   }}
 
   def resolveUser:Receive = {
