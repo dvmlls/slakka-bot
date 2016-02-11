@@ -38,4 +38,8 @@ object SlackWebProtocol extends DefaultJsonProtocol with CollectionFormats {
   case class IMList(ims:List[IM])
   implicit val imFormat = jsonFormat2(IM)
   implicit val imListFormat = jsonFormat1(IMList)
+
+  /* https://api.slack.com/methods/channels.join */
+  case class ChannelJoin(channel:Channel)
+  implicit val channelJoinFormat = jsonFormat1(ChannelJoin)
 }

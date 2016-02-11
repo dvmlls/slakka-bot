@@ -7,6 +7,7 @@ case object Crew extends SockLength
 case object Ankle extends SockLength
 case object Knee extends SockLength
 case class Sock (length:SockLength, isArgyle:Boolean)
+
 val mine = Sock(Ankle, isArgyle=true)
 mine match {
   case Sock(_, true) => "you silly"
@@ -37,18 +38,23 @@ safeDiv(4,0)
 section = "--------------------------"
 section = "|   FOR COMPREHENSIONS   |"
 section = "--------------------------"
+
 for (i <- 0 until 10) {
   print(i)
 }
+
 for (i <- 1 to 5) yield i
 for (x <- List('a', 'b', 'c'); y <- 1 to 3) yield s"$x$y"
+
 for (
   x <- List('m', 'n', 'o');
   y <- 1 to 5
   if y % 2 == 0
 ) yield s"[$x,$y]"
+
 List('m', 'n', 'o')
   .flatMap(x => (1 to 5).filter(_ % 2 == 0).map(y => s"[$x,$y]"))
+
 section = "--------------------------"
 section = "|   PATTERN MATCHING     |"
 section = "--------------------------"

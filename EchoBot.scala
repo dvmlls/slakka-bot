@@ -21,10 +21,12 @@ case class ChannelChat(channelName:String, message:String)
 
 class Kernel extends Actor with ActorLogging {
   val rtmStart = SlackWebAPI.createPipeline[RTMStart]("rtm.start")
+  val channelJoin = SlackWebAPI.createPipeline[ChannelJoin]("channel.join")
+
   val slack = context.actorOf(Props[SlackChatActor], "slack")
   val ims = context.actorOf(Props[IMService], "ims")
-  val users = context.actorOf(Props[UserService], "users")
   val channels = context.actorOf(Props[ChannelService], "channels")
+  val users = context.actorOf(Props[UserService], "users")
 
   rtmStart(Map()).pipeTo(self)
 
@@ -39,6 +41,7 @@ class Kernel extends Actor with ActorLogging {
         ) slack ! SendMessage(channelId, message)
       case ChannelChat(channelName, message) =>
         for (
+          _ <- channelJoin(Map("name" -> channelName));
           ChannelService.All(channelId, _) <- (channels ? ChannelName(channelName)).mapTo[ChannelService.All]
         ) slack ! SendMessage(channelId, message)
       case m @ MessageReceived(ChannelId(channelId), UserId(userId), Mention(message)) if message.trim().length > 0 =>

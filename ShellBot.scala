@@ -8,7 +8,7 @@ import slack.ChannelService.ChannelId
 import slack.IMService.IMOpened
 import slack.SlackChatActor.{MessageReceived, SendMessage}
 import slack.UserService.{UserName, UserId, All}
-import slack.{UserService, IMService, SlackChatActor, SlackWebAPI}
+import slack._
 import slack.SlackWebProtocol._
 
 implicit val system = ActorSystem()
@@ -25,6 +25,9 @@ class Kernel extends Actor with ActorLogging {
   val slack = context.actorOf(Props[SlackChatActor], "slack")
   val ims = context.actorOf(Props[IMService], "ims")
   val users = context.actorOf(Props[UserService], "users")
+  val throttle = context.actorOf(Props[Throttle], "throttle")
+
+  throttle ! slack
 
   import util.ProcessActor2._
 
@@ -35,8 +38,8 @@ class Kernel extends Actor with ActorLogging {
       if desiredUsername == username && channelId == desiredChannelId =>
 
       process ! WriteLine(message)
-    case StdOut(s) if s.trim.length > 0 => slack ! SendMessage(desiredChannelId, s"`$s`")
-    case StdErr(s) if s.trim.length > 0 => slack ! SendMessage(desiredChannelId, s"_`$s`_")
+    case StdOut(s) if s.trim.length > 0 => throttle ! SendMessage(desiredChannelId, s"`$s`")
+    case StdErr(s) if s.trim.length > 0 => throttle ! SendMessage(desiredChannelId, s"_`$s`_")
     case Finished(returnCode) =>
       slack ! SendMessage(desiredChannelId, s"process exited with code: `$returnCode`")
       context.unbecome()
