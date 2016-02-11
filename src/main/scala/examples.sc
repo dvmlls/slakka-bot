@@ -55,7 +55,6 @@ section = "--------------------------"
 val punctuation = " ,.:!?"
 val myUserId = "U0K3W1BK3"
 val IdMention = s""".*[<][@]$myUserId[>][$punctuation]+(.+)""".r
-val NameMention = s"""[@]dvbt (.+)""".r
 "<@U0K3W1BK3>: do some stuff" match {
   case IdMention(message) => s"id match: $message"
   case _ => "doesn't match"
