@@ -51,3 +51,16 @@ sbt "runMain git.GitFlow WeConnect spaceman spaceman-production 944 BILL-328"
 sbt "runMain git.GitFlow WeConnect spaceman spaceman-production 985 BILL-386"
 sbt "runMain git.GitFlow WeConnect spaceman spaceman-production 990 BILL-395"
 ```
+
+Alternatively, omit the `-e` and specify your dependencies:
+
+```
+sbt "runMain git.GithubFlow WeConnect wework-anywhere wework-anywhere 749" && 
+  sbt "runMain git.GitFlow WeConnect spaceman spaceman-production 990 BILL-395" &&
+  heroku run rake db:migrate -a spaceman-production && 
+  sbt "runMain git.GitFlow WeConnect spaceman spaceman-production 826 BILL-125"
+sbt "runMain git.GitFlow WeConnect spaceman spaceman-production 944 BILL-328"
+sbt "runMain git.GitFlow WeConnect spaceman spaceman-production 985 BILL-386"
+sbt "runMain git.GitFlow WeConnect spaceman spaceman-production 990 BILL-395"
+```
+If the first deploy fails, it won't run the subsequent deploys _that depend on it_, but it will run the others. 
