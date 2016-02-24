@@ -1,11 +1,8 @@
-import java.net.URI
 import java.util.concurrent.TimeUnit
-
 import akka.actor._
 import akka.util.Timeout
-import akka.pattern.pipe
+import akka.pattern.{pipe, ask}
 import slack.ChannelService.ChannelId
-import slack.IMService.IMOpened
 import slack.SlackChatActor.{MessageReceived, SendMessage}
 import slack.UserService.{UserName, UserId, All}
 import slack._
@@ -14,14 +11,10 @@ import slack.SlackWebProtocol._
 implicit val system = ActorSystem()
 implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
 import system.dispatcher
-import akka.pattern.ask
 
 val authorized = List("dave")
 
-case class SendIM(username:String, message:String)
-
 class Kernel extends Actor with ActorLogging {
-  val rtmStart = SlackWebAPI.createPipeline[RTMStart]("rtm.start")
   val slack = context.actorOf(Props[SlackChatActor], "slack")
   val ims = context.actorOf(Props[IMService], "ims")
   val users = context.actorOf(Props[UserService], "users")
@@ -30,8 +23,6 @@ class Kernel extends Actor with ActorLogging {
   throttle ! slack
 
   import util.ProcessActor2._
-
-  rtmStart(Map()).pipeTo(self)
 
   def running(process:ActorRef, desiredUsername:String, desiredChannelId:String):Receive = { log.info("state -> running"); {
     case m @ MessageReceived(ChannelId(channelId), UserName(username), message)
@@ -56,7 +47,7 @@ class Kernel extends Actor with ActorLogging {
   }
 
   def connected(myUserId:String, myUserName:String):Receive = { log.info("state -> connected")
-    val Mention = s""".*[<][@]$myUserId[>][: ]+(.+)""".r
+    val Mention = SlackChatActor.mentionPattern(myUserId)
 
     {
       case m @ MessageReceived(ChannelId(channelId), UserName(username), Mention(message)) if authorized.contains(username) =>
@@ -69,9 +60,7 @@ class Kernel extends Actor with ActorLogging {
   }
 
   def receive:Receive = { log.info("state -> disconnected"); {
-    case RTMStart(url, RTMSelf(id, name)) =>
-      slack ! new URI(url)
-      context.become(connected(id, name) orElse resolveUser)
+    case RTMSelf(id, name) => context.become(connected(id, name) orElse resolveUser)
   }}
 }
 
