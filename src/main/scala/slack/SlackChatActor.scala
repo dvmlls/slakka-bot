@@ -23,6 +23,7 @@ object SlackChatActor {
   case class SendMessage(channel:String, message:String)
   case class MessageReceived(channel:ChannelIdentifier, from:UserIdentifier, message:String)
   def mentionPattern(userId:String) = s""".*[<][@]$userId[>][: ]+(.+)""".r
+  def mention(userId:String) = s"<@$userId>"
 }
 
 object MessageMatcher {

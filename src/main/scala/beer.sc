@@ -12,3 +12,7 @@ q match {
   case Beer(s1, s2) => s"""beer: s1="$s1" s2="$s2""""
   case Its(s) => "its: " + s
 }
+
+val s = Set[String]()
+
+s + "a" + "b"

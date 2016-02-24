@@ -73,7 +73,19 @@ class TestParseSlack extends FunSpec {
   describe("deleted messages") {
     val s = """{"channel":"D0K3XHE3Y","subtype":"message_deleted","ts":"1456282696.000038","previous_message":{"type":"message","user":"U06DF12SU","text":"hi2","ts":"1456282688.000036"},"hidden":true,"deleted_ts":"1456282688.000036","event_ts":"1456282696.395419","type":"message"}"""
 
-    it("aren't actually message") {
+    it("aren't actually messages") {
+      intercept[MatchError] {
+        parse(s) match {
+          case Received(MessageMatcher(MessageReceived(_, _, message))) => println(message)
+        }
+      }
+    }
+  }
+
+  describe("group joined events") {
+    val s = """{"type":"group_joined","channel":{"name":"dvtest","is_mpim":false,"last_read":"1456335577.000003","is_open":true,"creator":"U06DF12SU","is_group":true,"purpose":{"value":"","creator":"","last_set":0},"id":"G0NSL6F5H","unread_count":0,"unread_count_display":0,"members":["U06DF12SU","U0K3W1BK3"],"topic":{"value":"","creator":"","last_set":0},"latest":{"type":"message","user":"U06DF12SU","text":"<@U0K3W1BK3>: hi?","ts":"1456335577.000003"},"is_archived":false,"created":1456335572}}"""
+
+    it("aren't messages") {
       intercept[MatchError] {
         parse(s) match {
           case Received(MessageMatcher(MessageReceived(_, _, message))) => println(message)

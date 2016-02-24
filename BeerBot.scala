@@ -20,7 +20,7 @@ class Kernel extends Actor with ActorLogging {
   val channels = context.actorOf(Props[ChannelService], "channels")
   val users = context.actorOf(Props[UserService], "users")
 
-  def beerOclock(interested:Map[String,String]):Receive = { log.info("state -> beer oclock!")
+  def beerOclock(conductor:String, passengers:Set[String]):Receive = { log.info("state -> beer oclock!")
 
     {
       case _ => ???
@@ -29,17 +29,11 @@ class Kernel extends Actor with ActorLogging {
 
   def notBeerOclockYet(myUserId:String, myUserName:String):Receive = { log.info("state -> not beer oclock yet")
 
-    var interested = Map[String, String]()
+    var interested = Set[String]()
 
     {
-      case MessageReceived(channel, UserId(userId), message)  =>
-        (users ? UserId(userId))
-          .mapTo[UserService.All]
-          .map { case a => MessageReceived(channel, a, message) }
-          .pipeTo(self)
-      case MessageReceived(ChannelId(sourceChannelId), UserService.All(userId, username, _), Question(msg)) =>
-
-        interested += userId -> username
+      case MessageReceived(ChannelId(sourceChannelId), UserId(userId), Question(msg))  =>
+        interested += userId
 
         slack ! SendMessage(sourceChannelId, "no, it isn't beer o'clock yet")
 
@@ -47,29 +41,36 @@ class Kernel extends Actor with ActorLogging {
           .mapTo[IMOpened]
           .map {
             case IMOpened(_, imChannelId) =>
-              val exceptMe = interested.filter(_._1 != userId)
+              val exceptMe = interested.filter(_ != userId)
               val message =
-                if(exceptMe.nonEmpty) "others interested in a beer train: " + exceptMe.values.mkString(", ")
-                else "you're the first one aboard the beer train today"
+                if(exceptMe.nonEmpty) "others interested in a beer train: " + exceptMe.map(SlackChatActor.mention).mkString(", ")
+                else "you're the first one aboard today's beer train, " + SlackChatActor.mention(userId)
               SendMessage(imChannelId, message)
           }
           .pipeTo(slack)
 
-      case MessageReceived(channel, UserService.All(userId, username, _), Answer(msg)) =>
+      case MessageReceived(ChannelId(sourceChannelId), UserId(userId), Answer(msg)) =>
 
-        (interested.keys ++ Seq(userId)).foreach(uid => {
+        slack ! SendMessage(sourceChannelId, "it's beer o'clock, people! this is not a drill.")
+
+        interested += userId
+        val passengers = interested - userId
+
+        interested.foreach(uid => {
           (ims ? IMService.OpenIM(uid))
             .mapTo[IMOpened]
             .map {
               case IMOpened(_, channelId) =>
-                val messages = Seq(
-                  "all aboard the beer train! :engine: :traincar: :traincar: :traincar: :caboose:",
-                  s"today's conductor is @$username!"
-                )
-                val passengers =
-                  if (interested.values.nonEmpty) Seq(interested.values.map(u => s"@$u").mkString(", "))
-                  else Seq.empty
-                SendMessage(channelId, (messages ++ passengers ++ Seq("choo choo!")).mkString("\n"))
+                val train = "all aboard the beer train! :engine: :traincar: :traincar: :traincar: :caboose: choo choo!"
+                val conductor =
+                  if (uid == userId) "*you* are the conductor - rally the troops!"
+                  else s"today's conductor is ${ SlackChatActor.mention(userId) }!"
+
+                val ps =
+                  if (passengers.nonEmpty) "passengers: " + passengers.map(SlackChatActor.mention).mkString(", ")
+                  else "no passengers :( looks like you're rolling solo. you do you."
+
+                SendMessage(channelId, Seq(train, conductor, ps).mkString("\n"))
             }
             .pipeTo(slack)
         })

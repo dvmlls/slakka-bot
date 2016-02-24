@@ -7,19 +7,22 @@ import Beer._
 class TestBeerOclock extends FunSpec {
 
   val questions = Seq (
-    """ is it beer oclock yet?  """,
-    """is it beer o'clock?""",
-    """ is it beer oclock yet  """,
-    """ is it beer o'clock""",
-    """is it booze oclock?"""
+    " is it beer oclock yet?  ",
+    "is it beer o'clock?",
+    " is it beer oclock yet  ",
+    " is it beer o'clock",
+    "is it booze oclock?"
   )
 
   val answers = Seq(
-    """   it's beer oclock zomg!!!!111!!111one11! """,
-    """ it is totally beer o'clock, bro""",
-    """its beer oclock""",
-    """it is beer oclock""",
-    """it's booze oclock"""
+    "   it's beer oclock zomg!!!!111!!111one11! ",
+    " it is totally beer o'clock, bro",
+    "its beer oclock",
+    "it is beer oclock",
+    "it's booze oclock",
+    "it's beer oclock",
+    "it's beer o'clock",
+    "it’s still beer oclock, fool"
   )
 
   describe("beer o'clock") {
