@@ -1,12 +1,9 @@
 import org.junit.runner.RunWith
-import org.scalatest.FunSuite
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner
 import slack.MessageMatcher
 import slack.SlackChatActor.MessageReceived
-import spray.json.{JsValue, JsonParser}
-
-import org.scalatest.prop.Checkers
+import spray.json.JsonParser
 import util.WebSocketClient.Received
 import slack.SlackChatActor
 

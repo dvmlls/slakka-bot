@@ -13,42 +13,67 @@ implicit val system = ActorSystem()
 implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
 import system.dispatcher
 
-case class SendIM(username:String, message:String)
-case class ChannelChat(channelName:String, message:String)
-
 class Kernel extends Actor with ActorLogging {
   val slack = context.actorOf(Props[SlackChatActor], "slack")
   val ims = context.actorOf(Props[IMService], "ims")
   val channels = context.actorOf(Props[ChannelService], "channels")
   val users = context.actorOf(Props[UserService], "users")
 
-  def connected(myUserId:String, myUserName:String):Receive = { log.info("state -> connected")
-    val Mention = SlackChatActor.mentionPattern(myUserId)
+  val Question = """(.*is.*it.*beer.*o[']?clock.*yet.*)""".r
+  val Answer = """(.*it[']?s.*beer.*o[']?clock.*)""".r
+
+  def beerOclock(interested:Map[String,String]):Receive = { log.info("state -> beer oclock!")
 
     {
-      case SendIM(username, message) =>
-        (users ? UserName(username))
-          .mapTo[UserService.All]
-          .flatMap { case UserService.All(userId, _, _) => (ims ? IMService.OpenIM(userId)).mapTo[IMOpened] }
-          .map { case IMOpened(_, channelId) => SendMessage(channelId, message) }
-          .pipeTo(slack)
-      case ChannelChat(channelName, message) =>
-        (channels ? ChannelName(channelName))
-          .mapTo[ChannelService.All]
-          .map { case ChannelService.All(channelId, _) => SendMessage(channelId, message)}
-          .pipeTo(slack)
-      case m @ MessageReceived(ChannelId(channelId), UserId(userId), Mention(message)) if message.trim().length > 0 =>
-        slack ! SendMessage(channelId, s"no, ${message.trim}")
-      case MessageReceived(channel, UserId(userId), message) =>
+      case _ => ???
+    }
+  }
+
+  def notBeerOclockYet(myUserId:String, myUserName:String):Receive = { log.info("state -> not beer oclock yet")
+
+    var interested = Map[String, String]()
+
+    {
+      case MessageReceived(channel, UserId(userId), message)  =>
         (users ? UserId(userId))
           .mapTo[UserService.All]
-          .map { case UserService.All(_, userName, _) => MessageReceived(channel, UserName(userName), message) }
+          .map { case a => MessageReceived(channel, a, message) }
           .pipeTo(self)
+      case MessageReceived(channel, UserService.All(userId, username, _), Question(msg)) =>
+        (ims ? IMService.OpenIM(userId))
+          .mapTo[IMOpened]
+          .map {
+            case IMOpened(_, channelId) =>
+              val message =
+                if(interested.nonEmpty) "others interested in a beer train: " + interested.values.mkString(", ")
+                else "you're the first one aboard the beer train today"
+              SendMessage(channelId, message)
+          }
+          .pipeTo(slack)
+
+        interested += userId -> username
+      case MessageReceived(channel, UserService.All(userId, username, _), Answer(msg)) =>
+
+        (interested.keys ++ Seq(userId)).foreach(uid => {
+          (ims ? IMService.OpenIM(uid))
+            .mapTo[IMOpened]
+            .map {
+              case IMOpened(_, channelId) =>
+                val messages = Seq(
+                  "all aboard the beer train! :engine: :traincar: :traincar: :traincar: :caboose:",
+                  s"today's conductor is @$username!"
+                )
+                val passengers = if (interested.values.nonEmpty) Seq(interested.values.map(u => s"@$u").mkString(", "))
+                  else Seq.empty
+                SendMessage(channelId, (messages ++ passengers ++ Seq("choo choo!")).mkString("\n"))
+            }
+            .pipeTo(slack)
+        })
     }
   }
 
   def receive:Receive = { log.info("state -> disconnected"); {
-    case RTMSelf(id, name) => context.become(connected(id, name))
+    case RTMSelf(id, name) => context.become(notBeerOclockYet(id, name))
   }}
 }
 
