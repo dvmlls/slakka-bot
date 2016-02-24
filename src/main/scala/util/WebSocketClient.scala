@@ -48,23 +48,26 @@ class WebSocketClient extends Actor with ActorLogging {
         context.become(disconnected)
         client ! Disconnected()
       }
-      override def onError(session:Session, error:Throwable) = { log.error(s"error", error) }
+      override def onError(session:Session, error:Throwable) = {
+        log.error(s"error", error)
+        throw error
+      }
     }
     val config = ClientEndpointConfig.Builder.create().build()
-    ClientManager.createClient().connectToServer(endpoint, config, server)
+    val c = ClientManager.createClient()
+    c.connectToServer(endpoint, config, server)
   }
 
-  def disconnected:Receive = { log.info("state -> disconnected") ; {
+  def connected(session:Session):Receive = { log.info("state -> connected") ; {
+    case message:JsValue =>
+      log.debug(s"sending message: $message")
+      session.getAsyncRemote.sendText(message.compactPrint)
+  }}
+
+  def disconnected:Receive = { log.info("state -> disconnected"); {
     case server:URI =>
       log.info(s"connecting to: $server")
       connect(server, context.parent)
-  }}
-
-  def connected(session:Session):Receive = { log.info("state -> connected") ; {
-    case message:String =>
-      log.debug(s"sending message: $message")
-      session.getAsyncRemote.sendText(message)
-    case message:JsValue => self ! message.compactPrint
   }}
 
   override def receive: Receive = disconnected

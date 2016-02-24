@@ -6,7 +6,6 @@ import spray.client.pipelining._
 import spray.http.{FormData, HttpRequest}
 import spray.httpx.SprayJsonSupport._
 import spray.json.{JsObject, JsonReader}
-import spray.httpx.SprayJsonSupport._
 import scala.concurrent.{ExecutionContext, Future}
 
 /*

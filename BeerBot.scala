@@ -50,7 +50,7 @@ class Kernel extends Actor with ActorLogging {
   }
 
   def receive:Receive = { log.info("state -> disconnected"); {
-    case RTMStart(url, RTMSelf(id, name)) => context.become(connected(id, name))
+    case RTMSelf(id, name) => context.become(connected(id, name))
   }}
 }
 
