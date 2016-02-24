@@ -13,8 +13,10 @@ implicit val system = ActorSystem()
 implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
 import system.dispatcher
 
-case class SendIM(username:String, message:String)
-case class ChannelChat(channelName:String, message:String)
+sealed trait ChatType
+case class IM(username:String) extends ChatType
+case class Channel(name:String) extends ChatType
+case class Chat(t:ChatType, message:String)
 
 class Kernel extends Actor with ActorLogging {
   val slack = context.actorOf(Props[SlackChatActor], "slack")
@@ -26,13 +28,13 @@ class Kernel extends Actor with ActorLogging {
     val Mention = SlackChatActor.mentionPattern(myUserId)
 
     {
-      case SendIM(username, message) =>
+      case Chat(IM(username), message) =>
         (users ? UserName(username))
           .mapTo[UserService.All]
           .flatMap { case UserService.All(userId, _, _) => (ims ? IMService.OpenIM(userId)).mapTo[IMOpened] }
           .map { case IMOpened(_, channelId) => SendMessage(channelId, message) }
           .pipeTo(slack)
-      case ChannelChat(channelName, message) =>
+      case Chat(Channel(channelName), message) =>
         (channels ? ChannelName(channelName))
           .mapTo[ChannelService.All]
           .map { case ChannelService.All(channelId, _) => SendMessage(channelId, message)}

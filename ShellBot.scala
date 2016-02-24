@@ -14,8 +14,6 @@ import system.dispatcher
 
 val authorized = List("dave")
 
-case class SendIM(username:String, message:String)
-
 class Kernel extends Actor with ActorLogging {
   val slack = context.actorOf(Props[SlackChatActor], "slack")
   val ims = context.actorOf(Props[IMService], "ims")
