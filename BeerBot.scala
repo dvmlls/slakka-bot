@@ -41,7 +41,7 @@ class Kernel extends Actor with ActorLogging {
             val message =
               if(exceptMe.nonEmpty) "there are a couple other passengers: " + exceptMe.map(SlackChatActor.mention).mkString(", ")
               else "you're the only passenger so far, " + SlackChatActor.mention(userId)
-            SendMessage(imChannelId, message)
+            SendMessage(imChannelId, Seq(c, message).mkString("\n"))
         }
         .pipeTo(slack)
     }
