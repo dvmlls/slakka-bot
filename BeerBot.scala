@@ -2,10 +2,9 @@ import java.util.concurrent.TimeUnit
 import akka.actor._
 import akka.util.Timeout
 import akka.pattern.{ask,pipe}
-import slack.ChannelService.{ChannelName, ChannelId}
 import slack.IMService.IMOpened
 import slack.SlackChatActor.{MessageReceived, SendMessage}
-import slack.UserService.{UserName, UserId}
+import slack.UserService.UserId
 import slack._
 import slack.SlackWebProtocol._
 
@@ -19,8 +18,8 @@ class Kernel extends Actor with ActorLogging {
   val channels = context.actorOf(Props[ChannelService], "channels")
   val users = context.actorOf(Props[UserService], "users")
 
-  val Question = """(.*is.*it.*beer.*o[']?clock.*yet.*)""".r
-  val Answer = """(.*it[']?s.*beer.*o[']?clock.*)""".r
+  val Question = """(?i)(.*is.*it.*beer.*o'?clock.*)""".r
+  val Answer = """(?i)(.*(?:it's|its|it is).*beer.*o'?clock.*)""".r
 
   def beerOclock(interested:Map[String,String]):Receive = { log.info("state -> beer oclock!")
 
