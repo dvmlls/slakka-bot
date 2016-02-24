@@ -1,25 +1,25 @@
 import org.junit.runner.RunWith
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner
+import Beer._
 
 @RunWith(classOf[JUnitRunner])
 class TestBeerOclock extends FunSpec {
-
-  val Question = """(?i)(.*is.*it.*beer.*o'?clock.*)""".r
-  val Answer = """(?i)(.*(?:it's|its|it is).*beer.*o'?clock.*)""".r
-
-  val answers = Seq(
-    """   it's beer oclock zomg!!!!111!!111one11! """,
-    """ it is totally beer o'clock, bro""",
-    """its beer oclock""",
-    """it is beer oclock"""
-  )
 
   val questions = Seq (
     """ is it beer oclock yet?  """,
     """is it beer o'clock?""",
     """ is it beer oclock yet  """,
-    """ is it beer o'clock"""
+    """ is it beer o'clock""",
+    """is it booze oclock?"""
+  )
+
+  val answers = Seq(
+    """   it's beer oclock zomg!!!!111!!111one11! """,
+    """ it is totally beer o'clock, bro""",
+    """its beer oclock""",
+    """it is beer oclock""",
+    """it's booze oclock"""
   )
 
   describe("beer o'clock") {

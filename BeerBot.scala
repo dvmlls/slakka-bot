@@ -2,11 +2,13 @@ import java.util.concurrent.TimeUnit
 import akka.actor._
 import akka.util.Timeout
 import akka.pattern.{ask,pipe}
+import slack.ChannelService.ChannelId
 import slack.IMService.IMOpened
 import slack.SlackChatActor.{MessageReceived, SendMessage}
 import slack.UserService.UserId
 import slack._
 import slack.SlackWebProtocol._
+import Beer._
 
 implicit val system = ActorSystem()
 implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
@@ -17,9 +19,6 @@ class Kernel extends Actor with ActorLogging {
   val ims = context.actorOf(Props[IMService], "ims")
   val channels = context.actorOf(Props[ChannelService], "channels")
   val users = context.actorOf(Props[UserService], "users")
-
-  val Question = """(?i)(.*is.*it.*beer.*o'?clock.*)""".r
-  val Answer = """(?i)(.*(?:it's|its|it is).*beer.*o'?clock.*)""".r
 
   def beerOclock(interested:Map[String,String]):Receive = { log.info("state -> beer oclock!")
 
@@ -38,19 +37,24 @@ class Kernel extends Actor with ActorLogging {
           .mapTo[UserService.All]
           .map { case a => MessageReceived(channel, a, message) }
           .pipeTo(self)
-      case MessageReceived(channel, UserService.All(userId, username, _), Question(msg)) =>
+      case MessageReceived(ChannelId(sourceChannelId), UserService.All(userId, username, _), Question(msg)) =>
+
+        interested += userId -> username
+
+        slack ! SendMessage(sourceChannelId, "no, it isn't beer o'clock yet")
+
         (ims ? IMService.OpenIM(userId))
           .mapTo[IMOpened]
           .map {
-            case IMOpened(_, channelId) =>
+            case IMOpened(_, imChannelId) =>
+              val exceptMe = interested.filter(_._1 != userId)
               val message =
-                if(interested.nonEmpty) "others interested in a beer train: " + interested.values.mkString(", ")
+                if(exceptMe.nonEmpty) "others interested in a beer train: " + exceptMe.values.mkString(", ")
                 else "you're the first one aboard the beer train today"
-              SendMessage(channelId, message)
+              SendMessage(imChannelId, message)
           }
           .pipeTo(slack)
 
-        interested += userId -> username
       case MessageReceived(channel, UserService.All(userId, username, _), Answer(msg)) =>
 
         (interested.keys ++ Seq(userId)).foreach(uid => {
@@ -62,7 +66,8 @@ class Kernel extends Actor with ActorLogging {
                   "all aboard the beer train! :engine: :traincar: :traincar: :traincar: :caboose:",
                   s"today's conductor is @$username!"
                 )
-                val passengers = if (interested.values.nonEmpty) Seq(interested.values.map(u => s"@$u").mkString(", "))
+                val passengers =
+                  if (interested.values.nonEmpty) Seq(interested.values.map(u => s"@$u").mkString(", "))
                   else Seq.empty
                 SendMessage(channelId, (messages ++ passengers ++ Seq("choo choo!")).mkString("\n"))
             }
