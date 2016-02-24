@@ -17,8 +17,6 @@ case class SendIM(username:String, message:String)
 case class ChannelChat(channelName:String, message:String)
 
 class Kernel extends Actor with ActorLogging {
-  val channelJoin = SlackWebAPI.createPipeline[ChannelJoin]("channels.join")
-
   val slack = context.actorOf(Props[SlackChatActor], "slack")
   val ims = context.actorOf(Props[IMService], "ims")
   val channels = context.actorOf(Props[ChannelService], "channels")

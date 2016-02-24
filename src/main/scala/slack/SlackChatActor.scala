@@ -32,7 +32,7 @@ object MessageMatcher {
     json.convertTo[Base] match {
       case Base(Some("message")) =>
         json.convertTo[Message] match {
-          case Message(_, channel, Some(text), Some(user)) => Some(MessageReceived(ChannelId(channel), UserId(user), text))
+          case Message(_, c, Some(msg), Some(u)) => Some(MessageReceived(ChannelId(c), UserId(u), msg))
           case _ => None
         }
       case _ => None
@@ -49,17 +49,7 @@ class SlackChatActor extends Actor with ActorLogging {
   override val supervisorStrategy = OneForOneStrategy() { case _ => Stop }
 
   def connected(slackClient:ActorRef):Receive = { log.info("state -> connected"); {
-    case Received(json) =>
-      log.debug("" + json)
-      json.convertTo[Base] match {
-        case Base(Some("message")) =>
-          json.convertTo[Message] match {
-            case Message(_, channel, Some(text), Some(user)) =>
-              context.parent ! MessageReceived(ChannelId(channel), UserId(user), text)
-            case m:Message => log.debug(s"received message I couldn't parse: $m")
-          }
-        case _ => context.parent ! json
-      }
+    case Received(MessageMatcher(m)) => context.parent ! m
     case Disconnected() => context.become(disconnected)
     case SendMessage(c, m) => slackClient ! Message("message", c, Some(m), None).toJson
     case Terminated(who) =>
