@@ -1,4 +1,5 @@
 import java.util.concurrent.TimeUnit
+import scala.concurrent.duration._
 import akka.actor._
 import akka.util.Timeout
 import akka.pattern.{ask,pipe}
@@ -9,6 +10,7 @@ import slack.UserService.UserId
 import slack._
 import slack.SlackWebProtocol._
 import Beer._
+import scala.language.postfixOps
 
 implicit val system = ActorSystem()
 implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
@@ -20,14 +22,46 @@ class Kernel extends Actor with ActorLogging {
   val channels = context.actorOf(Props[ChannelService], "channels")
   val users = context.actorOf(Props[UserService], "users")
 
-  def beerOclock(conductor:String, passengers:Set[String]):Receive = { log.info("state -> beer oclock!")
+  case object EndTrain
+
+  def beerOclock(conductor:String, originalPassengers:Set[String]):Receive = { log.info("state -> beer oclock!")
+
+    system.scheduler.scheduleOnce(4 hours, self, EndTrain)
+    var passengers = originalPassengers
+
+    def update(userId:String, channelId:String): Unit = {
+      passengers += userId
+      slack ! SendMessage(channelId, "it's totally beer o'clock, join the train!")
+      (ims ? IMService.OpenIM(userId))
+        .mapTo[IMOpened]
+        .map {
+          case IMOpened(_, imChannelId) =>
+            val exceptMe = passengers.filter(_ != userId)
+            val c = s"${SlackChatActor.mention(conductor)} is the conductor of today's beer train"
+            val message =
+              if(exceptMe.nonEmpty) "there are a couple other passengers: " + exceptMe.map(SlackChatActor.mention).mkString(", ")
+              else "you're the only passenger so far, " + SlackChatActor.mention(userId)
+            SendMessage(imChannelId, message)
+        }
+        .pipeTo(slack)
+    }
 
     {
-      case _ => ???
+      case MessageReceived(ChannelId(sourceChannelId), UserId(userId), Question(msg))
+        if userId != conductor && !originalPassengers.contains(userId) =>
+
+        update(userId, sourceChannelId)
+
+      case MessageReceived(ChannelId(sourceChannelId), UserId(userId), Answer(msg))
+        if userId != conductor && !originalPassengers.contains(userId) =>
+
+        update(userId, sourceChannelId)
+
+      case EndTrain => context.become(notBeerOclockYet())
     }
   }
 
-  def notBeerOclockYet(myUserId:String, myUserName:String):Receive = { log.info("state -> not beer oclock yet")
+  def notBeerOclockYet():Receive = { log.info("state -> not beer oclock yet")
 
     var interested = Set[String]()
 
@@ -55,6 +89,7 @@ class Kernel extends Actor with ActorLogging {
 
         interested += userId
         val passengers = interested - userId
+        context.become(beerOclock(userId, passengers))
 
         interested.foreach(uid => {
           (ims ? IMService.OpenIM(uid))
@@ -68,7 +103,7 @@ class Kernel extends Actor with ActorLogging {
 
                 val ps =
                   if (passengers.nonEmpty) "passengers: " + passengers.map(SlackChatActor.mention).mkString(", ")
-                  else "no passengers :( looks like you're rolling solo. you do you."
+                  else "no passengers :( looks like you're rolling solo. you do *you*."
 
                 SendMessage(channelId, Seq(train, conductor, ps).mkString("\n"))
             }
@@ -78,7 +113,7 @@ class Kernel extends Actor with ActorLogging {
   }
 
   def receive:Receive = { log.info("state -> disconnected"); {
-    case RTMSelf(id, name) => context.become(notBeerOclockYet(id, name))
+    case RTMSelf(id, name) => context.become(notBeerOclockYet())
   }}
 }
 
