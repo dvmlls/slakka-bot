@@ -20,12 +20,13 @@ object GithubFlow extends App {
   val g = system.actorOf(Props[GitActor])
   val p = system.actorOf(Props[StatusPoller])
 
+  val poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus];
+
   val f = for (
-    RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
-    poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus];
     (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr.toInt, poll)
     if branchResult.isRight;
     _ <- g ? DeleteBranch(branchName, "origin");
+    RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
     _ <- g ? Checkout("master");
     _ <- g ? Pull();
     _ <- g ? AddRemote("production", s"git@heroku.com:$heroku.git");
@@ -54,15 +55,16 @@ object GitFlow extends App {
   val g = system.actorOf(Props[GitActor])
   val p = system.actorOf(Props[StatusPoller])
 
+  val poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus]
+
   val f = for (
-    RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
-    poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus];
     (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr.toInt, poll)
     if branchResult.isRight;
     _ <- g ? DeleteBranch(branchName, "origin");
     PRCreated(d2m) <- createPR(org, proj, s"$jira: d2m", "", "develop", "master");
     (_, masterSha, masterResult) <- Autobot.autoMerge(org, proj, d2m, poll)
     if masterResult.isRight;
+    RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
     _ <- g ? Checkout("master");
     _ <- g ? Pull();
     _ <- g ? AddRemote("production", s"git@heroku.com:$heroku.git");
@@ -91,10 +93,11 @@ object AutoMergeBranch extends App {
   val g = system.actorOf(Props[GitActor])
   val p = system.actorOf(Props[StatusPoller])
 
+  val poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus]
+
   val f = for (
     PRCreated(pr) <- createPR(org, proj, prTitle, "", branch, "master");
     RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
-    poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus];
     (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr, poll);
     _ <- g ? DeleteBranch(branchName, "origin")
   ) yield (branchName, branchSha, branchResult)
