@@ -25,8 +25,8 @@ object GithubFlow extends App {
   val f = for (
     (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr.toInt, poll)
     if branchResult.isRight;
-    _ <- g ? DeleteBranch(branchName, "origin");
     RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
+    _ <- g ? DeleteBranch(branchName, "origin");
     _ <- g ? Checkout("master");
     _ <- g ? Pull();
     _ <- g ? AddRemote("production", s"git@heroku.com:$heroku.git");
@@ -60,11 +60,11 @@ object GitFlow extends App {
   val f = for (
     (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr.toInt, poll)
     if branchResult.isRight;
+    RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
     _ <- g ? DeleteBranch(branchName, "origin");
     PRCreated(d2m) <- createPR(org, proj, s"$jira: d2m", "", "develop", "master");
     (_, masterSha, masterResult) <- Autobot.autoMerge(org, proj, d2m, poll)
     if masterResult.isRight;
-    RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
     _ <- g ? Checkout("master");
     _ <- g ? Pull();
     _ <- g ? AddRemote("production", s"git@heroku.com:$heroku.git");
