@@ -47,12 +47,12 @@ class Kernel extends Actor with ActorLogging {
     }
 
     {
-      case MessageReceived(ChannelId(sourceChannelId), UserId(userId), Question(msg))
+      case MessageReceived(ChannelId(sourceChannelId), UserId(userId), Question(msg), _)
         if userId != conductor && !originalPassengers.contains(userId) =>
 
         update(userId, sourceChannelId)
 
-      case MessageReceived(ChannelId(sourceChannelId), UserId(userId), Answer(msg))
+      case MessageReceived(ChannelId(sourceChannelId), UserId(userId), Answer(msg), _)
         if userId != conductor && !originalPassengers.contains(userId) =>
 
         update(userId, sourceChannelId)
@@ -66,7 +66,7 @@ class Kernel extends Actor with ActorLogging {
     var interested = Set[String]()
 
     {
-      case MessageReceived(ChannelId(sourceChannelId), UserId(userId), Question(msg))  =>
+      case MessageReceived(ChannelId(sourceChannelId), UserId(userId), Question(msg), _)  =>
         interested += userId
 
         slack ! SendMessage(sourceChannelId, "no, it isn't beer o'clock yet")
@@ -83,7 +83,7 @@ class Kernel extends Actor with ActorLogging {
           }
           .pipeTo(slack)
 
-      case MessageReceived(ChannelId(sourceChannelId), UserId(userId), Answer(msg)) =>
+      case MessageReceived(ChannelId(sourceChannelId), UserId(userId), Answer(msg), _) =>
 
         slack ! SendMessage(sourceChannelId, "it's beer o'clock, people! this is not a drill.")
 

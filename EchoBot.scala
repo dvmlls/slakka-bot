@@ -39,12 +39,12 @@ class Kernel extends Actor with ActorLogging {
           .mapTo[ChannelService.All]
           .map { case ChannelService.All(channelId, _) => SendMessage(channelId, message)}
           .pipeTo(slack)
-      case m @ MessageReceived(ChannelId(channelId), UserId(userId), Mention(message)) if message.trim().length > 0 =>
+      case m @ MessageReceived(ChannelId(channelId), UserId(userId), Mention(message), _) if message.trim().length > 0 =>
         slack ! SendMessage(channelId, s"no, ${message.trim}")
-      case MessageReceived(channel, UserId(userId), message) =>
+      case MessageReceived(channel, UserId(userId), message, _) =>
         (users ? UserId(userId))
           .mapTo[UserService.All]
-          .map { case UserService.All(_, userName, _) => MessageReceived(channel, UserName(userName), message) }
+          .map { case UserService.All(_, userName, _) => MessageReceived(channel, UserName(userName), message, None) }
           .pipeTo(self)
     }
   }

@@ -25,7 +25,7 @@ class Kernel extends Actor with ActorLogging {
   import util.ProcessActor2._
 
   def running(process:ActorRef, desiredUsername:String, desiredChannelId:String):Receive = { log.info("state -> running"); {
-    case m @ MessageReceived(ChannelId(channelId), UserName(username), message)
+    case m @ MessageReceived(ChannelId(channelId), UserName(username), message, _)
       if desiredUsername == username && channelId == desiredChannelId =>
 
       process ! WriteLine(message)
@@ -40,9 +40,9 @@ class Kernel extends Actor with ActorLogging {
   }}
 
   def resolveUser:Receive = {
-    case m @ MessageReceived(channelId, UserId(userId), message) if message.trim().length > 0 =>
+    case m @ MessageReceived(channelId, UserId(userId), message, _) if message.trim().length > 0 =>
       (users ? UserId(userId)).mapTo[All]
-        .map { case All(_, name, _) => MessageReceived(channelId, UserName(name), message) }
+        .map { case All(_, name, _) => MessageReceived(channelId, UserName(name), message, None) }
         .pipeTo(self)
   }
 
@@ -50,7 +50,7 @@ class Kernel extends Actor with ActorLogging {
     val Mention = SlackChatActor.mentionPattern(myUserId)
 
     {
-      case m @ MessageReceived(ChannelId(channelId), UserName(username), Mention(message)) if authorized.contains(username) =>
+      case m @ MessageReceived(ChannelId(channelId), UserName(username), Mention(message), _) if authorized.contains(username) =>
 
 
         val process = context.actorOf(Props[util.ProcessActor2])

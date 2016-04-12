@@ -1,11 +1,8 @@
 import java.util.concurrent.TimeUnit
 import akka.actor._
 import akka.util.Timeout
-import akka.pattern.{ask,pipe}
-import slack.ChannelService.{ChannelName, ChannelId}
-import slack.IMService.IMOpened
-import slack.SlackChatActor.{MessageReceived, SendMessage}
-import slack.UserService.{UserName, UserId}
+import slack.ChannelService.ChannelId
+import slack.SlackChatActor.MessageReceived
 import slack._
 import slack.SlackWebProtocol._
 
@@ -13,13 +10,17 @@ implicit val system = ActorSystem()
 implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
 
 class Kernel extends Actor with ActorLogging {
+  implicit val ctx = context.dispatcher
+
   val slack = context.actorOf(Props[SlackChatActor], "slack")
+  val reactions = SlackWebAPI.createPipeline[ReactionAdd]("reactions.add")
 
   def connected(myUserId:String, myUserName:String):Receive = { log.info("state -> connected")
 
     {
-      case MessageReceived(ChannelId(channelId), from, message) if message.contains("dump") =>
-        slack ! SendMessage(channelId, s"hehe dump")
+      case MessageReceived(ChannelId(channelId), _, message, Some(ts)) if message.contains("dump") =>
+        reactions(Map("channel" -> channelId, "timestamp" -> ts, "name" -> "hankey"))
+        // slack ! SendMessage(channelId, s"hehe dump")
     }
   }
 

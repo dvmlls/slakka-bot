@@ -15,13 +15,13 @@ object SlackRTProtocol extends DefaultJsonProtocol with CollectionFormats {
   case class Base(`type`:Option[String])
   implicit val baseFormat = jsonFormat1(Base)
 
-  case class Message(`type`:String, channel:String, text:Option[String], user:Option[String])
-  implicit val messageFormat = jsonFormat4(Message)
+  case class Message(`type`:String, channel:String, text:Option[String], user:Option[String], ts:Option[String])
+  implicit val messageFormat = jsonFormat5(Message)
 }
 
 object SlackChatActor {
   case class SendMessage(channel:String, message:String)
-  case class MessageReceived(channel:ChannelIdentifier, from:UserIdentifier, message:String)
+  case class MessageReceived(channel:ChannelIdentifier, from:UserIdentifier, message:String, ts:Option[String])
   def mentionPattern(userId:String) = s""".*[<][@]$userId[>][: ]+(.+)""".r
   def mention(userId:String) = s"<@$userId>"
 }
@@ -33,7 +33,7 @@ object MessageMatcher {
     json.convertTo[Base] match {
       case Base(Some("message")) =>
         json.convertTo[Message] match {
-          case Message(_, c, Some(msg), Some(u)) => Some(MessageReceived(ChannelId(c), UserId(u), msg))
+          case Message(_, c, Some(msg), Some(u), t) => Some(MessageReceived(ChannelId(c), UserId(u), msg, t))
           case _ => None
         }
       case _ => None
@@ -52,7 +52,7 @@ class SlackChatActor extends Actor with ActorLogging {
   def connected(slackClient:ActorRef):Receive = { log.info("state -> connected"); {
     case Received(MessageMatcher(m)) => context.parent ! m
     case Disconnected() => context.become(disconnected)
-    case SendMessage(c, m) => slackClient ! Message("message", c, Some(m), None).toJson
+    case SendMessage(c, m) => slackClient ! Message("message", c, Some(m), None, None).toJson
     case Terminated(who) =>
       log.warning(s"slack client disconnected: $who")
       context.become(disconnected)

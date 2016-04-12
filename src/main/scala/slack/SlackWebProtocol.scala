@@ -42,4 +42,8 @@ object SlackWebProtocol extends DefaultJsonProtocol with CollectionFormats {
   /* https://api.slack.com/methods/channels.join */
   case class ChannelJoin(channel:Channel)
   implicit val channelJoinFormat = jsonFormat1(ChannelJoin)
+
+  /* https://api.slack.com/methods/reactions.add */
+  case class ReactionAdd(channel:String, timestamp:String, name:String)
+  implicit val reactionAddFormat = jsonFormat3(ReactionAdd)
 }
