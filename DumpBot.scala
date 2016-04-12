@@ -2,7 +2,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor._
 import akka.util.Timeout
 import slack.ChannelService.ChannelId
-import slack.SlackChatActor.MessageReceived
+import slack.SlackChatActor.{SendMessage, MessageReceived}
 import slack._
 import slack.SlackWebProtocol._
 
@@ -17,10 +17,14 @@ class Kernel extends Actor with ActorLogging {
 
   def connected(myUserId:String, myUserName:String):Receive = { log.info("state -> connected")
 
+    val r = new java.util.Random(new java.util.Date().getTime)
+
     {
       case MessageReceived(ChannelId(channelId), _, message, Some(ts)) if message.contains("dump") =>
-        reactions(Map("channel" -> channelId, "timestamp" -> ts, "name" -> "hankey"))
-        // slack ! SendMessage(channelId, s"hehe dump")
+        if (r.nextDouble() > 0.5)
+          reactions(Map("channel" -> channelId, "timestamp" -> ts, "name" -> "hankey"))
+        else
+          slack ! SendMessage(channelId, s"hehe dump")
     }
   }
 
