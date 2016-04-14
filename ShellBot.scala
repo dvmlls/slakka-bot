@@ -25,9 +25,7 @@ class Kernel extends Actor with ActorLogging {
   import util.ProcessActor2._
 
   def running(process:ActorRef, desiredUsername:String, desiredChannelId:String):Receive = { log.info("state -> running"); {
-    case m @ MessageReceived(ChannelId(channelId), UserName(username), message, _)
-      if desiredUsername == username && channelId == desiredChannelId =>
-
+    case m @ MessageReceived(ChannelId(channelId), UserName(username), message, _) if desiredUsername == username && channelId == desiredChannelId =>
       process ! WriteLine(message)
     case StdOut(s) if s.trim.length > 0 => throttle ! SendMessage(desiredChannelId, s"`$s`")
     case StdErr(s) if s.trim.length > 0 => throttle ! SendMessage(desiredChannelId, s"_`$s`_")
@@ -51,8 +49,6 @@ class Kernel extends Actor with ActorLogging {
 
     {
       case m @ MessageReceived(ChannelId(channelId), UserName(username), Mention(message), _) if authorized.contains(username) =>
-
-
         val process = context.actorOf(Props[util.ProcessActor2])
         context.become(running(process, username, channelId) orElse resolveUser, discardOld = false)
         process ! Run(message)
