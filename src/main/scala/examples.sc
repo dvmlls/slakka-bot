@@ -63,19 +63,18 @@ val myUserId = "U0K3W1BK3"
 val IdMention = s""".*[<][@]$myUserId[>][$punctuation]+(.+)""".r
 "<@U0K3W1BK3>: do some stuff" match {
   case IdMention(message) => s"id match: $message"
-  case _ => "doesn't match"
+  case any:Any => s"doesn't match: $any"
 }
 "@dvbt: do some stuff" match {
   case IdMention(message) => s"id match: $message"
-  case _ => "doesn't match"
+  case any:Any => s"doesn't match: $any"
 }
 
-val GithubFlowPattern = """.*GithubFlow ([^ ]+) ([^ ]+) ([^ ]+) ([\d]+) ([^ ]+)""".r
+val GithubFlowPattern = """.*GithubFlow ([^ ]+) ([^ ]+) ([^ ]+) ([\d]+) ([^ ]+-[\d]+)""".r
 val m = "<@U0K3W1BK3>: GithubFlow WeConnect spaceman spaceman-production 1234 BILL-123"
 m match {
-  case IdMention(GithubFlowPattern(a, b, c, d, e)) =>
-    s"id+flow match: $a $b $c $d $e"
-  case _ => "doesn't match"
+  case IdMention(GithubFlowPattern(a, b, c, d, e)) => s"id+flow match: $a $b $c $d $e"
+  case _ => s"doesn't match: $m"
 }
 
 object MyExtractor {
@@ -87,10 +86,10 @@ object MyExtractor {
 
 "Dave rocks my socks" match {
   case MyExtractor(i, b) => s"he really is number $i, which is $b"
-  case _ => "boo hoo"
+  case any:Any => s"doesn't match: $any"
 }
 
 "Karl and his big fat face" match {
   case MyExtractor(i, b) => s"he really is number $i, which is $b"
-  case _ => "boo hoo"
+  case any:Any => s"doesn't match: $any"
 }
