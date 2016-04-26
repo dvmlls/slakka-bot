@@ -1,6 +1,7 @@
 # slakka-bot
 
 [![travis status](https://travis-ci.org/dvmlls/slakka-bot.svg?branch=master)](https://travis-ci.org/dvmlls/slakka-bot)
+[![maven central](https://img.shields.io/maven-central/v/cat.dvmlls/slakka-bot_2.11.svg?maxAge=2592000)
 
 Slack chat bot built with akka.  
 
