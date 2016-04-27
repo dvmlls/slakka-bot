@@ -115,3 +115,11 @@ scala> system.shutdown(); sys.exit()
 [success] Total time: 208 s, completed Jan 29, 2016 11:22:29 AM
 $ 
 ```
+
+## Releasing a new version
+
+Publish to Sonatype staging: https://github.com/xerial/sbt-sonatype#command-line-usage
+
+```
+$ sbt publishSigned && sbt sonatypeRelease
+```
