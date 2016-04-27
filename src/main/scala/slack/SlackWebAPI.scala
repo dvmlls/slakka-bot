@@ -13,15 +13,17 @@ import scala.concurrent.{ExecutionContext, Future}
  * http://spray.io/documentation/1.2.3/spray-client/#usage
  */
 object SlackWebAPI {
+  case class Token(s:String)
   def createPipeline[T](method:String)
-                       (implicit ctx:ExecutionContext, system:ActorSystem, rdr:JsonReader[T]) : Map[String,String] => Future[T] = {
+                       (implicit ctx:ExecutionContext, system:ActorSystem, rdr:JsonReader[T], token:Token
+                       ) : Map[String,String] => Future[T] = {
 
     val pipeline:HttpRequest => Future[JsObject] = sendReceive ~> unmarshal[JsObject]
     val url = s"https://slack.com/api/$method"
 
     {
       case args:Map[String,String] =>
-        val request:HttpRequest = Post(url, FormData(args ++ Map("token" -> sys.env("SLACK_TOKEN"))))
+        val request:HttpRequest = Post(url, FormData(args ++ Map("token" -> token.s)))
         val response:Future[JsObject] = pipeline(request)
 
         /*

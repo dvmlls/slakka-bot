@@ -17,7 +17,7 @@ class TestParseSlack extends FunSpec {
     it("isn't a message") {
       intercept[MatchError] {
         parse(s) match {
-          case Received(MessageMatcher(MessageReceived(_, _, message))) => println(message)
+          case Received(MessageMatcher(MessageReceived(_, _, message, _))) => println(message)
         }
       }
     }
@@ -28,7 +28,7 @@ class TestParseSlack extends FunSpec {
     it("isn't a message") {
       intercept[MatchError] {
         parse(s) match {
-          case Received(MessageMatcher(MessageReceived(_, _, message))) => println(message)
+          case Received(MessageMatcher(MessageReceived(_, _, message, _))) => println(message)
         }
       }
     }
@@ -38,7 +38,7 @@ class TestParseSlack extends FunSpec {
     val s = """{"channel":"D0K3XHE3Y","ts":"1456282553.000029","text":"hi","team":"T03KB9Y6Y","type":"message","user":"U06DF12SU"}"""
     it ("are totally messages") {
       parse(s) match {
-        case Received(MessageMatcher(MessageReceived(_, _, message))) => message === "hi"
+        case Received(MessageMatcher(MessageReceived(_, _, message, _))) => message === "hi"
       }
     }
   }
@@ -47,7 +47,7 @@ class TestParseSlack extends FunSpec {
     val s = """{"channel":"D0K3XHE3Y","ts":"1456282618.000030","text":"hello <@U0K3W1BK3>  how are you doing today?","team":"T03KB9Y6Y","type":"message","user":"U06DF12SU"}"""
     it ("are totally messages") {
       parse(s) match {
-        case Received(MessageMatcher(MessageReceived(_, _, message))) => assert(message.length > 0)
+        case Received(MessageMatcher(MessageReceived(_, _, message, _))) => assert(message.length > 0)
       }
     }
 
@@ -55,7 +55,7 @@ class TestParseSlack extends FunSpec {
       val myUserId = "U0K3W1BK3"
       val Mention = SlackChatActor.mentionPattern(myUserId)
       parse(s) match {
-        case Received(MessageMatcher(MessageReceived(_, _, Mention(message)))) => message.trim === "how are you doing today?"
+        case Received(MessageMatcher(MessageReceived(_, _, Mention(message), _))) => message.trim === "how are you doing today?"
       }
     }
 
@@ -64,7 +64,7 @@ class TestParseSlack extends FunSpec {
       val Mention = SlackChatActor.mentionPattern(myUserId)
       intercept[MatchError] {
         parse(s) match {
-          case Received(MessageMatcher(MessageReceived(_, _, Mention(message)))) => println(message)
+          case Received(MessageMatcher(MessageReceived(_, _, Mention(message), _))) => println(message)
         }
       }
     }
@@ -76,7 +76,7 @@ class TestParseSlack extends FunSpec {
     it("aren't actually messages") {
       intercept[MatchError] {
         parse(s) match {
-          case Received(MessageMatcher(MessageReceived(_, _, message))) => println(message)
+          case Received(MessageMatcher(MessageReceived(_, _, message, _))) => println(message)
         }
       }
     }
@@ -88,7 +88,7 @@ class TestParseSlack extends FunSpec {
     it("aren't messages") {
       intercept[MatchError] {
         parse(s) match {
-          case Received(MessageMatcher(MessageReceived(_, _, message))) => println(message)
+          case Received(MessageMatcher(MessageReceived(_, _, message, _))) => println(message)
         }
       }
     }

@@ -41,7 +41,7 @@ object MessageMatcher {
   }
 }
 
-class SlackChatActor extends Actor with ActorLogging {
+class SlackChatActor()(implicit t:SlackWebAPI.Token) extends Actor with ActorLogging {
   implicit val sys = context.system
   implicit val ec = sys.dispatcher
   import SlackChatActor._

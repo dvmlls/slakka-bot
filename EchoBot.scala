@@ -18,11 +18,13 @@ case class IM(username:String) extends ChatType
 case class Channel(name:String) extends ChatType
 case class Chat(t:ChatType, message:String)
 
-class Kernel extends Actor with ActorLogging {
-  val slack = context.actorOf(Props[SlackChatActor], "slack")
-  val ims = context.actorOf(Props[IMService], "ims")
-  val channels = context.actorOf(Props[ChannelService], "channels")
-  val users = context.actorOf(Props[UserService], "users")
+implicit val token = SlackWebAPI.Token(sys.env("SLACK_TOKEN"))
+
+class EchoBot extends Actor with ActorLogging {
+  val slack = context.actorOf(Props { new SlackChatActor() }, "slack")
+  val ims = context.actorOf(Props { new IMService() }, "ims")
+  val channels = context.actorOf(Props { new ChannelService() }, "channels")
+  val users = context.actorOf(Props { new UserService() }, "users")
 
   def connected(myUserId:String, myUserName:String):Receive = { log.info("state -> connected")
     val Mention = SlackChatActor.mentionPattern(myUserId)
@@ -50,8 +52,8 @@ class Kernel extends Actor with ActorLogging {
   }
 
   def receive:Receive = { log.info("state -> disconnected"); {
-    case RTMStart(url, RTMSelf(id, name)) => context.become(connected(id, name))
+    case RTMSelf(id, name) => context.become(connected(id, name))
   }}
 }
 
-val kernel = system.actorOf(Props[Kernel], "kernel")
+val kernel = system.actorOf(Props[EchoBot], "kernel")

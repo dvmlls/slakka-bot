@@ -14,7 +14,7 @@ object ChannelService {
   case class All(id:String, name:String) extends ChannelIdentifier
 }
 
-class ChannelService extends Actor with ActorLogging {
+class ChannelService()(implicit t:SlackWebAPI.Token) extends Actor with ActorLogging {
   import ChannelService._
   implicit val ctx = context.dispatcher
   implicit val sys = context.system

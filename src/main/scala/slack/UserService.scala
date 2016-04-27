@@ -14,7 +14,7 @@ object UserService {
   case class All(id:String, name:String, email:Option[String]) extends UserIdentifier
 }
 
-class UserService extends Actor with ActorLogging {
+class UserService()(implicit t:SlackWebAPI.Token) extends Actor with ActorLogging {
   import UserService._
   implicit val ctx = context.dispatcher
   implicit val sys = context.system
