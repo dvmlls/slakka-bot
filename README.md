@@ -99,7 +99,7 @@ $ tail -f ~/bot.log
 
 Send someone a direct message:
 ```
-scala> kernel ! SendIM("dave", "your face")
+scala> kernel ! Chat(IM("dave"), "your face")
 ```
 
 ![Imgur](http://i.imgur.com/kqnDNz6.png)
@@ -109,6 +109,10 @@ When they reply, it'll show up in the logs:
 unhandled message from Actor[akka://default/user/kernel/slack#828626119]: MessageReceived(D0K3XHE3Y,U06DF12SU,no YOUR face)
 ```
 
+Chat in a channel:
+```
+scala> kernel ! Chat(Channel("general"), "your face")
+```
 
 To shut down your bot cleanly, terminate the actor system first, shutting down all the background threads:
 ```
