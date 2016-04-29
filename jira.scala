@@ -20,8 +20,7 @@ implicit val u = UUEncUP(sys.env("JIRA_PASSWORD"))
 implicit val token = SlackWebAPI.Token(sys.env("SLACK_TOKEN"))
 
 val p = JiraWebAPI.pipeline[Issue]
-
-val JIRAPattern = """.*[ :,.]([A-Z]+[-][0-9]+).*""".r
+val JIRAPattern = """.*?([A-Z]+[-][0-9]+).*""".r
 
 class JiraBot extends Actor with ActorLogging {
   val slack = context.actorOf(Props { new SlackChatActor() }, "slack")
@@ -37,8 +36,8 @@ class JiraBot extends Actor with ActorLogging {
         p(Get(s"https://wework.atlassian.net/rest/api/2/issue/$issueCode")).onComplete {
           case Success(issue) =>
             log.info("" + issue)
-            val d = issue.fields.description.split('\n').map("> " + _).mkString("\n")
-            val s = s"[*$issueCode*] _${issue.fields.status.name}_ \n$d"
+            val d = issue.fields.description.map (_.split('\n').map("\n> " + _).mkString(""))
+            val s = s"[*$issueCode*] _${issue.fields.status.name}_ ${issue.fields.summary}" + d.getOrElse("")
             slack ! SendMessage(channelId, s)
           case Failure(ex) =>
             log.warning(issueCode, ex)

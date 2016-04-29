@@ -11,10 +11,11 @@ import scala.concurrent.ExecutionContext
 object JiraWebProtocol extends DefaultJsonProtocol with MoreJsonProtocols {
   case class IssueStatus(id:String, name:String)
   implicit val issueStatusFormat = jsonFormat2(IssueStatus)
-  case class IssueFields(status:IssueStatus, description:String)
-  implicit val issueFieldsFormat = jsonFormat2(IssueFields)
+  case class IssueFields(status:IssueStatus, summary:String, description:Option[String])
+  implicit val issueFieldsFormat = jsonFormat3(IssueFields)
   case class Issue(id:String, key:String, fields:IssueFields)
   implicit val issueFormat = jsonFormat3(Issue)
+
   case class Errors(errorMessages:List[String])
   implicit val errorFormat = jsonFormat1(Errors)
 }
