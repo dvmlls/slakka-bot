@@ -37,7 +37,7 @@ class JiraBot extends Actor with ActorLogging {
           case Success(issue) =>
             log.info("" + issue)
             val d = issue.fields.description.map (_.split('\n').map("\n> " + _).mkString(""))
-            val s = s"[*$issueCode*] _${issue.fields.status.name}_ ${issue.fields.summary}" + d.getOrElse("")
+            val s = s"*$issueCode* _[${issue.fields.status.name}]_ ${issue.fields.summary}" + d.getOrElse("")
             slack ! SendMessage(channelId, s)
           case Failure(ex) =>
             log.warning(issueCode, ex)
