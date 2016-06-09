@@ -93,3 +93,16 @@ object MyExtractor {
   case MyExtractor(i, b) => s"he really is number $i, which is $b"
   case any:Any => s"doesn't match: $any"
 }
+
+val JIRAPattern = """.*?([A-Z]+[-][0-9]+).*""".r
+
+"Tell me about BILL-123 you ass" match {
+  case JIRAPattern(s) => s"success: $s"
+  case any:Any => s"failure: $any"
+}
+
+"<@U0K3W1BK3>: DATA-411" match {
+  case IdMention(JIRAPattern(s)) => s"success: $s"
+  case IdMention(s) => s"failure 1: $s"
+  case any:Any => s"failure2: $any"
+}
