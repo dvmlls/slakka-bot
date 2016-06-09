@@ -56,4 +56,13 @@ object GithubWebAPI {
     val p = pipeline[List[PRComment]]
     p(req)
   }
+
+  def getCommits(org:String, proj:String, number:Int) (implicit sys:ActorSystem, cx:ExecutionContext) = {
+    /*
+     * question: should this query the git log instead of the github api?
+     */
+    val req = Get(s"$api/repos/$org/$proj/pulls/$number/commits")
+    val p = pipeline[List[PRCommit]]
+    p(req)
+  }
 }

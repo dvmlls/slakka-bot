@@ -20,7 +20,7 @@ object GithubFlow extends App {
   val g = system.actorOf(Props[GitActor])
   val p = system.actorOf(Props[StatusPoller])
 
-  val poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus];
+  val poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus]
 
   val f = for (
     (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr.toInt, poll)
@@ -101,30 +101,6 @@ object AutoMergeBranch extends App {
     (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr, poll);
     _ <- g ? DeleteBranch(branchName, "origin")
   ) yield (branchName, branchSha, branchResult)
-
-  f.onComplete {
-    case Success(s) =>
-      System.out.println(s"success: $s")
-      system.shutdown()
-      sys.exit(0)
-    case Failure(ex) =>
-      System.err.println(s"failure: $ex")
-      system.shutdown()
-      sys.exit(1)
-  }
-}
-
-object CommentTest extends App {
-  val Array(org, proj, pr, body) = args
-
-  implicit val system = ActorSystem()
-  import system.dispatcher
-  implicit val timeout = new Timeout(15, TimeUnit.MINUTES)
-
-  val g = system.actorOf(Props[GitActor])
-  val p = system.actorOf(Props[StatusPoller])
-
-  val f = comment(org, proj, pr.toInt, body)
 
   f.onComplete {
     case Success(s) =>

@@ -36,4 +36,11 @@ object GithubWebProtocol extends DefaultJsonProtocol with MoreJsonProtocols {
 
   case class PRComment(body:String, user:PRUser, updated_at:Instant, commit_id:String)
   implicit val prCommentFormat = jsonFormat4(PRComment)
+
+  case class PRCommitCommitter(date:Instant)
+  implicit val prCommitCommitterFormat = jsonFormat1(PRCommitCommitter)
+  case class PRCommitCommit(committer:PRCommitCommitter)
+  implicit val prCommitCommitFormat = jsonFormat1(PRCommitCommit)
+  case class PRCommit(sha:String, committer:PRUser, commit:PRCommitCommit)
+  implicit val prCommitFormat = jsonFormat3(PRCommit)
 }

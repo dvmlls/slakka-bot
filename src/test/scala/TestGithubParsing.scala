@@ -1,6 +1,6 @@
 import java.time.Instant
 
-import git.GithubWebProtocol.PRComment
+import git.GithubWebProtocol.{PRCommit, PR, PRComment}
 import org.junit.runner.RunWith
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner
@@ -28,5 +28,36 @@ class TestGithubParsing extends FunSpec {
     it ("has an updated at") { assert(comment.updated_at === Instant.parse("2011-04-14T16:00:49Z")) }
     it ("has a user") { assert(comment.user.login === "octocat") }
     it ("has a commit id") { assert(comment.commit_id === "6dcb09b5b57875f334f61aebed695e2e4193db5e") }
+  }
+
+  describe("pr json") {
+    lazy val stream = getClass.getResourceAsStream("/github_web_api/pr.json")
+    lazy val lines = scala.io.Source.fromInputStream(stream).getLines.mkString
+    lazy val parsed = JsonParser(lines)
+
+    it ("is valid json") { assert(parsed !== null) }
+
+    lazy val pr = parsed.convertTo[PR]
+
+    it ("is a pull request") { assert(pr !== null) }
+    it ("has a state") { assert(pr.state === "open") }
+  }
+
+  describe("pr commits json") {
+    lazy val stream = getClass.getResourceAsStream("/github_web_api/pr_commits.json")
+    lazy val lines = scala.io.Source.fromInputStream(stream).getLines.mkString
+    lazy val parsed = JsonParser(lines)
+
+    it ("is valid json") { assert(parsed !== null) }
+
+    lazy val commits = parsed.convertTo[List[PRCommit]]
+
+    it ("is a list of commits") { assert(commits.length === 1) }
+
+    lazy val commit = commits.head
+
+    it ("has a committer") { assert(commit.committer.login === "octocat") }
+    it ("has a date") { assert(commit.commit.committer.date === Instant.parse("2011-04-14T16:00:49Z")) }
+    it ("has a sha") { assert(commit.sha === "6dcb09b5b57875f334f61aebed695e2e4193db5e") }
   }
 }
