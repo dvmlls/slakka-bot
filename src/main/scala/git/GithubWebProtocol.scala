@@ -1,5 +1,7 @@
 package git
 
+import java.time.Instant
+
 import spray.json.DefaultJsonProtocol
 import util.MoreJsonProtocols
 
@@ -28,4 +30,10 @@ object GithubWebProtocol extends DefaultJsonProtocol with MoreJsonProtocols {
   implicit val commentOnIssueFormat = jsonFormat1(CommentOnIssue)
   case class CommentedOnIssue(html_url:String)
   implicit val commentedOnIssueFormat = jsonFormat1(CommentedOnIssue)
+
+  case class PRUser(login:String)
+  implicit val prUserFormat = jsonFormat1(PRUser)
+
+  case class PRComment(body:String, user:PRUser, updated_at:Instant, commit_id:String)
+  implicit val prCommentFormat = jsonFormat4(PRComment)
 }

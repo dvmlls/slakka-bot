@@ -1,6 +1,8 @@
 package util
 
-import spray.json.{DefaultJsonProtocol, JsValue, RootJsonFormat}
+import java.time.Instant
+
+import spray.json._
 
 trait MoreJsonProtocols {
   /*
@@ -11,5 +13,16 @@ trait MoreJsonProtocols {
     val format = DefaultJsonProtocol.eitherFormat[A, B]
     def write(either: Either[A, B]) = format.write(either)
     def read(value: JsValue) = format.read(value)
+  }
+
+  /*
+   * https://groups.google.com/forum/#!topic/spray-user/nJBCaCiFvGo
+   */
+  implicit object TimestampJsonFormat extends JsonFormat[Instant] {
+    def write(x: Instant) = JsString("farts")
+    def read(value: JsValue) = value match {
+      case JsString(s) => Instant.parse(s)
+      case x => deserializationError("Expected Timestamp as JsString, but got " + x)
+    }
   }
 }
