@@ -49,7 +49,7 @@ lazy val dependencies = Seq(
 )
 
 lazy val conflictDependencies = Seq( // to avoid dependency conflict warnings
-  "org.scala-lang" % "scala-reflect" % "2.11.7",
+  "org.scala-lang" % "scala-reflect" % "2.11.8",
   "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
   "org.scala-lang.modules" %% "scala-xml" % "1.0.4"
 )
