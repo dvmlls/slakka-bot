@@ -6,12 +6,16 @@ import spray.httpx.unmarshalling._
 import scala.concurrent.ExecutionContext
 import spray.httpx.SprayJsonSupport._
 
+/*
+ * https://developer.github.com/v3/
+ */
 object GithubWebAPI {
   import GithubWebProtocol._
 
   val api = "https://api.github.com"
   def pipeline[T](implicit system:ActorSystem, cx:ExecutionContext, um:FromResponseUnmarshaller[T]) = {
     addHeader("Authorization", s"token ${sys.env("GITHUB_TOKEN")}") ~>
+      addHeader("Accept", "application/vnd.github.v3+json") ~> // github advises requesting the version explicitly
       sendReceive ~>
       unmarshal[T]
   }
@@ -29,7 +33,7 @@ object GithubWebAPI {
   }
 
   def createPR(org:String, proj:String, title:String, body:String, source:String, destination:String)
-                       (implicit sys:ActorSystem, cx:ExecutionContext) = {
+              (implicit sys:ActorSystem, cx:ExecutionContext) = {
     val req = Post(s"$api/repos/$org/$proj/pulls", CreatePR(title, source, destination, body))
     val p = pipeline[PRCreated]
     p(req)
@@ -44,6 +48,12 @@ object GithubWebAPI {
   def comment(org:String, proj:String, issue:Int, body:String) (implicit sys:ActorSystem, cx:ExecutionContext) = {
     val req = Post(s"$api/repos/$org/$proj/issues/$issue/comments", CommentOnIssue(body))
     val p = pipeline[CommentedOnIssue]
+    p(req)
+  }
+
+  def getComments(org:String, proj:String, number:Int) (implicit sys:ActorSystem, cx:ExecutionContext) = {
+    val req = Get(s"$api/repos/$org/$proj/pulls/$number/comments")
+    val p = pipeline[List[PRComment]]
     p(req)
   }
 }
