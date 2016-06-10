@@ -1,5 +1,6 @@
 import java.util.concurrent.TimeUnit
-import scala.util.{Success, Failure}
+import git.GithubWebAPI
+
 import akka.util.Timeout
 import akka.actor.{Props, ActorLogging, Actor, ActorSystem}
 import jira.JiraWebAPI
@@ -19,7 +20,8 @@ implicit val d = system.dispatcher
 implicit val u = UUEncUP(sys.env("JIRA_PASSWORD"))
 implicit val token = SlackWebAPI.Token(sys.env("SLACK_TOKEN"))
 
-val p = JiraWebAPI.pipeline[Issue]
+val issues = JiraWebAPI.pipeline[Issue]
+val pulls = GithubWebAPI.
 val JIRAPattern = """.*?([A-Z]+[-][0-9]+).*""".r
 
 class JiraBot extends Actor with ActorLogging {
@@ -33,15 +35,23 @@ class JiraBot extends Actor with ActorLogging {
 
     {
       case MessageReceived(ChannelId(channelId), UserId(userId), Mention(JIRAPattern(issueCode)), _) =>
-        p(Get(s"https://wework.atlassian.net/rest/api/2/issue/$issueCode")).onComplete {
-          case Success(issue) =>
+
+        val f = for (
+          issue <- issues(Get(s"https://wework.atlassian.net/rest/api/2/issue/$issueCode"))
+        ) yield issue
+
+        f.onFailure {
+          case ex =>
+            log.warning(issueCode, ex)
+            val s = s"[*$issueCode*] error: ${ex.getMessage}"
+            slack ! SendMessage(channelId, s)
+        }
+
+        f.foreach {
+          case issue =>
             log.info("" + issue)
             val d = issue.fields.description.map (_.split('\n').map("\n> " + _).mkString(""))
             val s = s"*$issueCode* _[${issue.fields.status.name}]_ ${issue.fields.summary}" + d.getOrElse("")
-            slack ! SendMessage(channelId, s)
-          case Failure(ex) =>
-            log.warning(issueCode, ex)
-            val s = s"[*$issueCode*] error: ${ex.getMessage}"
             slack ! SendMessage(channelId, s)
         }
     }

@@ -3,6 +3,7 @@ package git
 import java.util.concurrent.TimeUnit
 import akka.actor.{Props, ActorSystem}
 import akka.util.Timeout
+import com.typesafe.scalalogging.Logger
 import scala.util.{Failure, Success}
 import GitActor._
 import GithubWebAPI._
@@ -17,8 +18,8 @@ object GithubFlow extends App {
   implicit val timeout = new Timeout(15, TimeUnit.MINUTES)
   import system.dispatcher
 
-  val g = system.actorOf(Props[GitActor])
-  val p = system.actorOf(Props[StatusPoller])
+  val g = system.actorOf(Props[GitActor], "git")
+  val p = system.actorOf(Props[StatusPoller], "poller")
 
   val poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus]
 
@@ -52,8 +53,8 @@ object GitFlow extends App {
   implicit val timeout = new Timeout(15, TimeUnit.MINUTES)
   import system.dispatcher
 
-  val g = system.actorOf(Props[GitActor])
-  val p = system.actorOf(Props[StatusPoller])
+  val g = system.actorOf(Props[GitActor], "git")
+  val p = system.actorOf(Props[StatusPoller], "poller")
 
   val poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus]
 

@@ -65,4 +65,10 @@ object GithubWebAPI {
     val p = pipeline[List[PRCommit]]
     p(req)
   }
+
+  def listPulls(org:String, proj:String) (implicit sys:ActorSystem, cx:ExecutionContext) = {
+    val req = Get(s"$api/repos/$org/$proj/pulls?state=open")
+    val p = pipeline[List[PRComment]]
+    p(req)
+  }
 }

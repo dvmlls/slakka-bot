@@ -23,16 +23,17 @@ object Autobot {
     ) yield s
 
     val retryPoll = (sha:String) => pollForFailures(sha)
-      .recoverWith { case _ =>  retry(sha) }
-      .recoverWith { case _ =>  retry(sha) }
-      .recoverWith { case _ =>  retry(sha) }
-      .recoverWith { case _ =>  retry(sha) }
-      .recoverWith { case _ =>  retry(sha) }
+      .recoverWith { case _ => retry(sha) }
+      .recoverWith { case _ => retry(sha) }
+      .recoverWith { case _ => retry(sha) }
+      .recoverWith { case _ => retry(sha) }
+      .recoverWith { case _ => retry(sha) }
 
     for (
       (branchName, sha) <- getPR(org, proj, pr).flatMap {
-        case PR(_, "open", PRHead(branchName, sha), _, _) => Future { (branchName, sha) }
-        case PR(_, failed, _, _, _) => Future.failed(new Exception(s"pr not open: $failed"))
+        case PR(_, _, "open", PRHead(branchName, sha), _, _) => Future { (branchName, sha) }
+        case PR(_, _, status, _, mergeable, _) =>
+          Future.failed(new Exception(s"pr not open or mergeable: status=$status mergeable=$mergeable"))
       };
       _ <- retryPoll(sha).flatMap {
         case s:CISuccess => Future { true }
