@@ -8,7 +8,7 @@ import scala.concurrent.duration.Duration
 class StatusPoller extends Actor with ActorLogging {
   implicit val ctx = context.dispatcher
 
-  val s = context.actorOf(Props[StatusActor])
+  val s = context.actorOf(Props[StatusActor], "status")
 
   def pending(c:CheckCIStatus, requester:ActorRef):Receive = { log.debug("state -> pending"); {
     case CIPending() => schedule(c)

@@ -3,7 +3,7 @@ lazy val commonSettings = Seq(
   version := "2.0.0",
   scalaVersion := "2.11.8",
   sourcesInBase := false,
-  scalacOptions ++= Seq("-deprecation", "-feature", "-target:jvm-1.7")
+  scalacOptions ++= Seq("-deprecation", "-feature", "-target:jvm-1.8")
 )
 
 lazy val publishSettings = Seq(
