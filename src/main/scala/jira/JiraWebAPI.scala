@@ -1,6 +1,7 @@
 package jira
 
 import akka.actor.ActorSystem
+import slack.SlackChatActor
 import spray.client.pipelining._
 import spray.httpx.unmarshalling._
 import spray.json.DefaultJsonProtocol
@@ -20,6 +21,11 @@ object JiraWebProtocol extends DefaultJsonProtocol with MoreJsonProtocols {
 
   case class Errors(errorMessages:List[String])
   implicit val errorFormat = jsonFormat1(Errors)
+
+  case class TransitionTransition(id:Int)
+  implicit val transitionTransitionFormat = jsonFormat1(TransitionTransition)
+  case class Transition(transition:TransitionTransition)
+  implicit val transitionFormat = jsonFormat1(Transition)
 }
 
 object JiraWebAPI {
@@ -28,4 +34,15 @@ object JiraWebAPI {
   def pipeline[T](implicit system:ActorSystem, cx:ExecutionContext, um:FromResponseUnmarshaller[T], u:UUEncUP) = {
     addHeader("Authorization", s"Basic ${u.s}") ~> sendReceive ~> unmarshal[T]
   }
+
+  // val issues = JiraWebAPI.pipeline[Issue]
+  // issues(Get(s"https://wework.atlassian.net/rest/api/2/issue/$issueCode"))
+
+
+}
+
+object JIRA {
+  val ticketPattern = "[A-Z]+[-][0-9]+"
+  val TicketPattern = s""".*?($ticketPattern).*""".r
+  val CommandPattern = s""".*?(deploy|describe|resolve) ($ticketPattern).*?""".r
 }
