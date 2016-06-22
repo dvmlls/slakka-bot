@@ -5,6 +5,7 @@ import akka.actor.{PoisonPill, ActorLogging, Actor}
 import scala.concurrent.Future
 import scala.io.Source
 import scala.sys.process.{Process, ProcessIO}
+import scala.collection.mutable
 
 object ProcessActor2 {
   import scala.language.implicitConversions
@@ -12,8 +13,9 @@ object ProcessActor2 {
   case class Run(args:Seq[String], workingDirectory:Option[File]=None)
   case class StdErr(s:String)
   case class StdOut(s:String)
-  case class WriteLine(s:String)
-  case class Close()
+  sealed trait Message
+  case class WriteLine(s:String) extends Message
+  case class Close() extends Message
   case class Finished(returnCode:Int)
 }
 
@@ -22,28 +24,48 @@ class ProcessActor2 extends Actor with ActorLogging {
   import akka.pattern.pipe
   implicit val c = context.dispatcher
 
-  def working(stdin:OutputStream):Receive = { log.debug("state -> working"); {
-    case WriteLine(s) => stdin.write(s"$s\n".getBytes); stdin.flush()
-    case Close() => stdin.close()
-  }}
+  def working(stdin:OutputStream, queue:mutable.Queue[Message]):Receive = {
+    log.debug("state -> working")
 
-  def idle:Receive = { log.debug("state -> idle"); {
-    case Run(args, workingDirectory) => log.debug(s"cwd=$workingDirectory args=$args")
-      val b = Process(args, workingDirectory)
+    def process(m:Message) = m match {
+      case WriteLine(s) => stdin.write(s"$s\n".getBytes); stdin.flush()
+      case Close() => stdin.close()
+    }
 
-      val requester = sender()
+    if (queue.nonEmpty) {
+      log.info(s"processing ${ queue.length } messages in queue")
+      queue.foreach(process)
+    }
 
-      val l = new ProcessIO(
-        stdin => context.become(working(stdin)),
-        stdout => Source.fromInputStream(stdout).getLines().foreach(requester ! StdOut(_)),
-        stderr => Source.fromInputStream(stderr).getLines().foreach(requester ! StdErr(_))
-      )
+    {
+      case m:Message => process(m)
+    }
+  }
 
-      Future { b.run(l).exitValue() }
-        .map(Finished)
-        .pipeTo(sender())
-        .andThen { case _ => self ! PoisonPill }
-  }}
+  def idle:Receive = {
+
+    log.debug("state -> idle")
+    val queue = mutable.Queue[Message]()
+
+    {
+      case Run(args, workingDirectory) => log.debug(s"cwd=$workingDirectory args=$args")
+        val b = Process(args, workingDirectory)
+
+        val requester = sender()
+
+        val l = new ProcessIO(
+          stdin => context.become(working(stdin, queue)),
+          stdout => Source.fromInputStream(stdout).getLines().foreach(requester ! StdOut(_)),
+          stderr => Source.fromInputStream(stderr).getLines().foreach(requester ! StdErr(_))
+        )
+
+        Future { b.run(l).exitValue() }
+          .map(Finished)
+          .pipeTo(sender())
+          .andThen { case _ => self ! PoisonPill }
+      case m:Message => queue.enqueue(m)
+    }
+  }
 
   def receive = idle
 }
