@@ -71,5 +71,10 @@ class TestGithubParsing extends FunSpec {
     lazy val prs = parsed.convertTo[List[PR]]
 
     it ("has some PRs in it") { assert(prs.length === 1)}
+
+    lazy val pr = prs.head
+
+    it ("has an id") { assert(pr.number === 1347) }
+    it ("has a name") { assert(pr.title === "new-feature") }
   }
 }
