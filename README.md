@@ -123,8 +123,15 @@ $
 
 ## Releasing a new version
 
-Publish to Sonatype staging: https://github.com/xerial/sbt-sonatype#command-line-usage
+https://github.com/xerial/sbt-sonatype#command-line-usage
+
+Publish to Sonatype staging (`publishSigned`) and release to Maven Central (`sonatypeRelease`): 
 
 ```
 $ sbt publishSigned && sbt sonatypeRelease
 ```
+
+View the project on:
+
+* the SonaType staging area: https://oss.sonatype.org
+* Maven Central: https://search.maven.org 
