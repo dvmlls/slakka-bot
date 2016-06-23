@@ -1,6 +1,6 @@
 import java.time.Instant
 
-import git.GithubWebProtocol.{PRCommit, PR, PRComment}
+import git.GithubWebProtocol.{IssueComment, PRReviewComment, PRCommit, PR}
 import org.junit.runner.RunWith
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner
@@ -10,15 +10,34 @@ import DefaultJsonProtocol._
 @RunWith(classOf[JUnitRunner])
 class TestGithubParsing extends FunSpec {
 
-  describe("PR comment json") {
+  describe ("issue comment json") {
+    lazy val stream = getClass.getResourceAsStream("/github_web_api/issue_comments.json")
+    lazy val lines = scala.io.Source.fromInputStream(stream).getLines.mkString
+    lazy val parsed = JsonParser(lines)
 
-    lazy val stream = getClass.getResourceAsStream("/github_web_api/pr_comments.json")
+    it ("is valid json") { assert(parsed !== null) }
+
+    lazy val comments = parsed.convertTo[List[IssueComment]]
+
+    it ("is a list of issue comments") { assert(comments.length === 1) }
+
+    lazy val comment = comments.head
+
+    it ("has a body") { assert(comment.body === "Me too") }
+    it ("has an updated at") { assert(comment.updated_at === Instant.parse("2011-04-14T16:00:49Z")) }
+    it ("has a user") { assert(comment.user.login === "octocat") }
+    it ("has a commit id") { assert(comment.id === 1) }
+  }
+
+  describe("PR review comment json") {
+
+    lazy val stream = getClass.getResourceAsStream("/github_web_api/pr_review_comments.json")
     lazy val lines = scala.io.Source.fromInputStream(stream).getLines.mkString
     lazy val parsed = JsonParser(lines)
 
     it("is valid json") { assert(parsed !== null) }
 
-    lazy val list = parsed.convertTo[List[PRComment]]
+    lazy val list = parsed.convertTo[List[PRReviewComment]]
 
     it ("is a list of PR comments") { assert(list.length === 1) }
 

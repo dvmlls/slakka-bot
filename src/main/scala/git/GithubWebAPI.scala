@@ -51,9 +51,15 @@ object GithubWebAPI {
     p(req)
   }
 
-  def getComments(org:String, proj:String, number:Int) (implicit sys:ActorSystem, cx:ExecutionContext) = {
+  def getIssueComments(org:String, proj:String, number:Int) (implicit sys:ActorSystem, cx:ExecutionContext) = {
+    val req = Get(s"$api/repos/$org/$proj/issues/$number/comments")
+    val p = pipeline[List[IssueComment]]
+    p(req)
+  }
+
+  def getReviewComments(org:String, proj:String, number:Int) (implicit sys:ActorSystem, cx:ExecutionContext) = {
     val req = Get(s"$api/repos/$org/$proj/pulls/$number/comments")
-    val p = pipeline[List[PRComment]]
+    val p = pipeline[List[PRReviewComment]]
     p(req)
   }
 
