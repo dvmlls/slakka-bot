@@ -65,7 +65,7 @@ class SlackChatActor()(implicit t:SlackWebAPI.Token) extends Actor with ActorLog
 
     {
       case RTMStart(url, RTMSelf(id, name)) =>
-        val slackClient = context.actorOf(Props[WebSocketClient])
+        val slackClient = context.actorOf(Props[WebSocketClient], "wsclient")
         slackClient ! new URI(url)
         context.parent ! RTMSelf(id, name)
         context.watch(slackClient)
