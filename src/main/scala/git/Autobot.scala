@@ -12,7 +12,7 @@ object Autobot {
                (implicit sys:ActorSystem, ctx:ExecutionContext) = {
 
     def pollForFailures(sha:String):Future[CIStatus] = poll(sha).flatMap {
-      case f:CIFailure => Future.failed(new Exception(s"CI failed: status=$f"))
+      case CIFailure => Future.failed(new Exception(s"CI failed"))
       case s:CIStatus => Future { s }
     }
 
@@ -35,7 +35,7 @@ object Autobot {
         case PR(_, _, status, _, _, _) => Future.failed(new Exception(s"pr not open: status=$status"))
       };
       _ <- retryPoll(sha).flatMap {
-        case s:CISuccess => Future { true }
+        case CISuccess => Future { true }
         case a:Any => Future.failed(new Exception(s"polling for CI status failed: $a"))
       };
       _ <- comment(org, proj, pr, "![skynet](http://i.giphy.com/y3e2P2Sdf8RUc.gif)");

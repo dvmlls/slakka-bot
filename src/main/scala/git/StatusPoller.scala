@@ -11,7 +11,7 @@ class StatusPoller extends Actor with ActorLogging {
   val s = context.actorOf(Props[StatusActor], "status")
 
   def pending(c:CheckCIStatus, requester:ActorRef):Receive = { log.debug("state -> pending"); {
-    case CIPending() => schedule(c)
+    case CIPending => schedule(c)
     case u:CIUnknown => schedule(c)
       context.become(unknown(c, requester) orElse handleTerminalStates(requester))
   }}
@@ -20,15 +20,15 @@ class StatusPoller extends Actor with ActorLogging {
     def terminate(a:Any): Unit = { requester ! a ; context.become(idle) }
 
     {
-      case s:CISuccess => terminate(s)
-      case f:CIFailure => terminate(f)
-      case e:CIError => terminate(e)
+      case CISuccess => terminate(CISuccess)
+      case CIFailure => terminate(CIFailure)
+      case CIError => terminate(CIError)
       case x:Status.Failure => terminate(x)
     }
   }
 
   def unknown(c:CheckCIStatus, requester:ActorRef, retriesLeft:Int=6):Receive = { log.debug("state -> unknown"); {
-    case CIPending() =>
+    case CIPending =>
       context.become(pending(c, requester) orElse handleTerminalStates(requester))
       schedule(c)
     case u:CIUnknown =>
