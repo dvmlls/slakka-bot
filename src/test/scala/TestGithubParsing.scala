@@ -60,6 +60,8 @@ class TestGithubParsing extends FunSpec {
 
     it ("is a pull request") { assert(pr !== null) }
     it ("has a state") { assert(pr.state === "open") }
+    it ("has a title") { assert(pr.title === "new-feature") }
+    it ("has a body") { assert(pr.body === "Please pull these awesome changes") }
   }
 
   describe("PR commits json") {

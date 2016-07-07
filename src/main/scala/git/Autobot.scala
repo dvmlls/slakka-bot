@@ -31,8 +31,8 @@ object Autobot {
 
     for (
       (branchName, sha) <- getPR(org, proj, pr).flatMap {
-        case PR(_, _, "open", PRHead(branchName, sha), _, _) => Future { (branchName, sha) }
-        case PR(_, _, status, _, _, _) => Future.failed(new Exception(s"pr not open: status=$status"))
+        case PR(_, _, "open", _, PRHead(branchName, sha), _, _) => Future { (branchName, sha) }
+        case PR(_, _, status, _, _, _, _) => Future.failed(new Exception(s"pr not open: status=$status"))
       };
       _ <- retryPoll(sha).flatMap {
         case CISuccess => Future { true }
