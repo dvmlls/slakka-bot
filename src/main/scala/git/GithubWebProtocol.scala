@@ -14,9 +14,9 @@ object GithubWebProtocol extends DefaultJsonProtocol with MoreJsonProtocols {
   implicit val mergePRFailureFormat = jsonFormat2(MergePRFailure)
 
   case class PRHead(ref:String, sha:String)
-  case class PR(title:String, number:Int, state:String, head:PRHead, mergeable:Option[Boolean], merged:Option[Boolean])
+  case class PR(title:String, number:Int, state:String, body:String, head:PRHead, mergeable:Option[Boolean], merged:Option[Boolean])
   implicit val PRHeadFormat = jsonFormat2(PRHead)
-  implicit val PRFormat = jsonFormat6(PR)
+  implicit val PRFormat = jsonFormat7(PR)
 
   case class CreatePR(title:String, head:String, base:String, body:String)
   case class PRCreated(number:Int)
