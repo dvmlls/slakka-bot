@@ -38,8 +38,8 @@ object Autobot {
         case CISuccess => Future { true }
         case a:Any => Future.failed(new Exception(s"polling for CI status failed: $a"))
       };
-      _ <- comment(org, proj, pr, "![skynet](http://i.giphy.com/y3e2P2Sdf8RUc.gif)");
-      result <- mergePR(org, proj, pr, sha)
+      result <- mergePR(org, proj, pr, sha);
+      _ <- comment(org, proj, pr, "![skynet](http://i.giphy.com/y3e2P2Sdf8RUc.gif)")
     ) yield (branchName, sha, result)
   }
 }

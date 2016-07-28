@@ -22,7 +22,7 @@ object SlackWebAPI {
     val url = s"https://slack.com/api/$method"
 
     {
-      case args:Map[String,String] =>
+      args:Map[String,String] =>
         val request:HttpRequest = Post(url, FormData(args ++ Map("token" -> token.s)))
         val response:Future[JsObject] = pipeline(request)
 

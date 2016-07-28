@@ -13,47 +13,6 @@ implicit val system = ActorSystem()
 implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
 import system.dispatcher
 
-sealed trait ChatType
-case class IM(username:String) extends ChatType
-case class Channel(name:String) extends ChatType
-case class Chat(t:ChatType, message:String)
-
 implicit val token = SlackWebAPI.Token(sys.env("SLACK_TOKEN"))
 
-class EchoBot extends Actor with ActorLogging {
-  val slack = context.actorOf(Props { new SlackChatActor() }, "slack")
-  val ims = context.actorOf(Props { new IMService() }, "ims")
-  val channels = context.actorOf(Props { new ChannelService() }, "channels")
-  val users = context.actorOf(Props { new UserService() }, "users")
-
-  def connected(myUserId:String, myUserName:String):Receive = { log.info("state -> connected")
-    val Mention = SlackChatActor.mentionPattern(myUserId)
-
-    {
-      case Chat(IM(username), message) =>
-        (users ? UserName(username))
-          .mapTo[UserService.All]
-          .flatMap { case UserService.All(userId, _, _) => (ims ? IMService.OpenIM(userId)).mapTo[IMOpened] }
-          .map { case IMOpened(_, channelId) => SendMessage(channelId, message) }
-          .pipeTo(slack)
-      case Chat(Channel(channelName), message) =>
-        (channels ? ChannelName(channelName))
-          .mapTo[ChannelService.All]
-          .map { case ChannelService.All(channelId, _) => SendMessage(channelId, message)}
-          .pipeTo(slack)
-      case m @ MessageReceived(ChannelId(channelId), UserId(userId), Mention(message), _) if message.trim().length > 0 =>
-        slack ! SendMessage(channelId, s"no, ${message.trim}")
-      case MessageReceived(channel, UserId(userId), message, _) =>
-        (users ? UserId(userId))
-          .mapTo[UserService.All]
-          .map { case UserService.All(_, userName, _) => MessageReceived(channel, UserName(userName), message, None) }
-          .pipeTo(self)
-    }
-  }
-
-  def receive:Receive = { log.info("state -> disconnected"); {
-    case RTMSelf(id, name) => context.become(connected(id, name))
-  }}
-}
-
-val kernel = system.actorOf(Props[EchoBot], "kernel")
+val kernel = system.actorOf(Props { new EchoBot() }, "kernel")
