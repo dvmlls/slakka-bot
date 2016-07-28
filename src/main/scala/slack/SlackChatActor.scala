@@ -41,7 +41,7 @@ object MessageMatcher {
   }
 }
 
-class SlackChatActor()(implicit t:SlackWebAPI.Token) extends Actor with ActorLogging {
+class SlackChatActor(target:Option[ActorRef] = None)(implicit t:SlackWebAPI.Token) extends Actor with ActorLogging {
   implicit val sys = context.system
   implicit val ec = sys.dispatcher
   import SlackChatActor._
@@ -50,7 +50,7 @@ class SlackChatActor()(implicit t:SlackWebAPI.Token) extends Actor with ActorLog
   override val supervisorStrategy = OneForOneStrategy() { case _ => Stop }
 
   def connected(slackClient:ActorRef):Receive = { log.info("state -> connected"); {
-    case Received(MessageMatcher(m)) => context.parent ! m
+    case Received(MessageMatcher(m)) => target.getOrElse(context.parent) ! m
     case Disconnected() => context.become(disconnected)
     case SendMessage(c, m) => slackClient ! Message("message", c, Some(m), None, None).toJson
     case Terminated(who) =>
@@ -67,7 +67,7 @@ class SlackChatActor()(implicit t:SlackWebAPI.Token) extends Actor with ActorLog
       case RTMStart(url, RTMSelf(id, name)) =>
         val slackClient = context.actorOf(Props[WebSocketClient], "wsclient")
         slackClient ! new URI(url)
-        context.parent ! RTMSelf(id, name)
+        target.getOrElse(context.parent) ! RTMSelf(id, name)
         context.watch(slackClient)
         context.become(connected(slackClient))
     }
