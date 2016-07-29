@@ -66,7 +66,7 @@ class TickerClient extends Actor with ActorLogging {
 }
 
 object StockBot {
-  val TickerPattern = """.*[$]([A-Z]{1,5}([:][A-Z]+)?).*""".r
+  val TickerPattern = """[$]([A-Z]{1,5}([:][A-Z]+)?)""".r
 }
 
 class Refresher(ticker:String, channelId:String, ts:String)(implicit val t:SlackWebAPI.Token) extends Actor with ActorLogging {

@@ -10,7 +10,7 @@ import slack.SlackWebAPI
 import slack.SlackWebProtocol.{EmojiList, RTMSelf}
 
 object SwarmBot {
-  val SwarmPattern = """.*(unleash|release) the ([a-z0-9_-]+)s""".r
+  val SwarmPattern = """(?i).*(unleash|release) the ([a-z0-9_-]+)s""".r
 }
 
 class SwarmBot(slack:ActorRef, api:GithubWebAPI)(implicit val t:SlackWebAPI.Token) extends Actor with ActorLogging {
@@ -23,8 +23,8 @@ class SwarmBot(slack:ActorRef, api:GithubWebAPI)(implicit val t:SlackWebAPI.Toke
     log.info("emoji: " + emojis.toList.sorted.mkString(", "))
 
     {
-      case MessageReceived(ChannelId(channelId), _, SwarmPattern(_, emoji), Some(ts)) if emojis.contains(emoji) =>
-        slack ! SendMessage(channelId, s":$emoji: " * 150)
+      case MessageReceived(ChannelId(channelId), _, SwarmPattern(_, emoji), Some(ts)) if emojis.contains(emoji.toLowerCase) =>
+        slack ! SendMessage(channelId, s":${emoji.toLowerCase()}: " * 100)
     }
   }
 

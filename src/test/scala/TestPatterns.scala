@@ -7,7 +7,7 @@ import bots.StockBot.TickerPattern
 @RunWith(classOf[JUnitRunner])
 class TestPatterns extends FunSpec {
   describe("the swarmbot") {
-    List("release the bees", "unleash the bats")
+    List("release the bees", "unleash the bats", "RELEASE THE BATS", "release the crabs")
       .foreach(s => {
         it("question: " + s) {
           s match {
