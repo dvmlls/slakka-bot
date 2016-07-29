@@ -7,7 +7,6 @@ import akka.util.Timeout
 import akka.pattern.ask
 
 import scala.util.{Failure, Success}
-import scala.concurrent.ExecutionContext
 
 import GitActor._
 import GithubWebAPI._
@@ -23,7 +22,6 @@ object GithubFlow extends App {
 
   object API extends Autobot {
     override implicit def system: ActorSystem = implicitly
-    override implicit def ec: ExecutionContext = implicitly
     override implicit def token: Token = Token(sys.env("GITHUB_TOKEN"))
   }
 
@@ -64,7 +62,6 @@ object GitFlow extends App {
 
   object API extends Autobot {
     override implicit def system: ActorSystem = implicitly
-    override implicit def ec: ExecutionContext = implicitly
     override implicit def token: Token = Token(sys.env("GITHUB_TOKEN"))
   }
 
@@ -108,7 +105,6 @@ object AutoMergeBranch extends App {
 
   object API extends Autobot {
     override implicit def system: ActorSystem = implicitly
-    override implicit def ec: ExecutionContext = implicitly
     override implicit def token: Token = Token(sys.env("GITHUB_TOKEN"))
   }
 

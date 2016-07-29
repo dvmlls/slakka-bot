@@ -2,7 +2,6 @@ package git
 
 import akka.actor.{Actor, ActorLogging}
 import git.StatusActor._
-import GithubWebAPI._
 import akka.pattern.pipe
 
 object StatusActor {

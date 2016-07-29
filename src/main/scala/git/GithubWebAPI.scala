@@ -19,8 +19,8 @@ trait GithubWebAPI {
   import GithubWebAPI._
 
   implicit def system:ActorSystem
-  implicit def ec:ExecutionContext
   implicit def token:Token
+  implicit def ec:ExecutionContext = system.dispatcher
 
   val api = "https://api.github.com"
   def pipeline[T](implicit um:FromResponseUnmarshaller[T]) = {
