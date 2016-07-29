@@ -1,30 +1,39 @@
 package git
 
 import java.util.concurrent.TimeUnit
-import akka.actor.{Props, ActorSystem}
+
+import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
-import com.typesafe.scalalogging.Logger
+import akka.pattern.ask
+
 import scala.util.{Failure, Success}
+import scala.concurrent.ExecutionContext
+
 import GitActor._
 import GithubWebAPI._
 import GithubWebProtocol._
 import StatusActor._
-import akka.pattern.ask
 
 object GithubFlow extends App {
   val Array(org, proj, heroku, pr) = args
 
   implicit val system = ActorSystem()
   implicit val timeout = new Timeout(15, TimeUnit.MINUTES)
-  import system.dispatcher
+  implicit val ec = system.dispatcher
+
+  object API extends Autobot {
+    override implicit def system: ActorSystem = implicitly
+    override implicit def ec: ExecutionContext = implicitly
+    override implicit def token: Token = Token(sys.env("GITHUB_TOKEN"))
+  }
 
   val g = system.actorOf(Props[GitActor], "git")
-  val p = system.actorOf(Props[StatusPoller], "poller")
+  val p = system.actorOf(Props { new StatusPoller(API) }, "poller")
 
   val poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus]
 
   val f = for (
-    (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr.toInt, poll)
+    (branchName, branchSha, branchResult) <- API.autoMerge(org, proj, pr.toInt, poll)
     if branchResult.isRight;
     RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
     _ <- g ? DeleteBranch(branchName, "origin");
@@ -51,20 +60,26 @@ object GitFlow extends App {
 
   implicit val system = ActorSystem()
   implicit val timeout = new Timeout(15, TimeUnit.MINUTES)
-  import system.dispatcher
+  implicit val ec = system.dispatcher
+
+  object API extends Autobot {
+    override implicit def system: ActorSystem = implicitly
+    override implicit def ec: ExecutionContext = implicitly
+    override implicit def token: Token = Token(sys.env("GITHUB_TOKEN"))
+  }
 
   val g = system.actorOf(Props[GitActor], "git")
-  val p = system.actorOf(Props[StatusPoller], "poller")
+  val p = system.actorOf(Props { new StatusPoller(API) }, "poller")
 
   val poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus]
 
   val f = for (
-    (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr.toInt, poll)
+    (branchName, branchSha, branchResult) <- API.autoMerge(org, proj, pr.toInt, poll)
     if branchResult.isRight;
     RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
     _ <- g ? DeleteBranch(branchName, "origin");
-    PRCreated(d2m) <- createPR(org, proj, s"$jira: d2m", "", "develop", "master");
-    (_, masterSha, masterResult) <- Autobot.autoMerge(org, proj, d2m, poll)
+    PRCreated(d2m) <- API.createPR(org, proj, s"$jira: d2m", "", "develop", "master");
+    (_, masterSha, masterResult) <- API.autoMerge(org, proj, d2m, poll)
     if masterResult.isRight;
     _ <- g ? Checkout("master");
     _ <- g ? Pull();
@@ -88,18 +103,24 @@ object AutoMergeBranch extends App {
   val Array(org, proj, branch, prTitle) = args
 
   implicit val system = ActorSystem()
-  import system.dispatcher
   implicit val timeout = new Timeout(15, TimeUnit.MINUTES)
+  implicit val ec = system.dispatcher
+
+  object API extends Autobot {
+    override implicit def system: ActorSystem = implicitly
+    override implicit def ec: ExecutionContext = implicitly
+    override implicit def token: Token = Token(sys.env("GITHUB_TOKEN"))
+  }
 
   val g = system.actorOf(Props[GitActor])
-  val p = system.actorOf(Props[StatusPoller])
+  val p = system.actorOf(Props { new StatusPoller(API) }, "poller")
 
   val poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus]
 
   val f = for (
-    PRCreated(pr) <- createPR(org, proj, prTitle, "", branch, "master");
+    PRCreated(pr) <- API.createPR(org, proj, prTitle, "", branch, "master");
     RepoCloned(repo) <- (g ? CloneRepo(org, proj)).mapTo[RepoCloned];
-    (branchName, branchSha, branchResult) <- Autobot.autoMerge(org, proj, pr, poll);
+    (branchName, branchSha, branchResult) <- API.autoMerge(org, proj, pr, poll);
     _ <- g ? DeleteBranch(branchName, "origin")
   ) yield (branchName, branchSha, branchResult)
 

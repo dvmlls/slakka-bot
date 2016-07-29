@@ -5,10 +5,10 @@ import akka.actor.{Status, _}
 import git.StatusActor._
 import scala.concurrent.duration.Duration
 
-class StatusPoller extends Actor with ActorLogging {
+class StatusPoller(api:GithubWebAPI) extends Actor with ActorLogging {
   implicit val ctx = context.dispatcher
 
-  val s = context.actorOf(Props[StatusActor], "status")
+  val s = context.actorOf(Props { new StatusActor(api) }, "status")
 
   def pending(c:CheckCIStatus, requester:ActorRef):Receive = { log.debug("state -> pending"); {
     case CIPending => schedule(c)

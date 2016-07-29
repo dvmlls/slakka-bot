@@ -50,4 +50,9 @@ object SlackWebProtocol extends DefaultJsonProtocol with CollectionFormats {
   /* https://api.slack.com/methods/emoji.list */
   case class EmojiList(emoji:Map[String,String])
   implicit val emojiListFormat = jsonFormat1(EmojiList)
+
+  /* https://api.slack.com/methods/chat.update */
+  /* https://api.slack.com/methods/chat.postMessage */
+  case class ChatPost(channel:String, timestamp:String)
+  implicit val chatPostFormat = jsonFormat2(ChatPost)
 }

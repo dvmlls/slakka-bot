@@ -46,4 +46,8 @@ object GithubWebProtocol extends DefaultJsonProtocol with MoreJsonProtocols {
 
   case class IssueComment(id:Int, body:String, user:PRUser, updated_at:Instant)
   implicit val issueCommentFormat = jsonFormat4(IssueComment)
+
+  /* https://developer.github.com/v3/repos/contents/ */
+  case class File(name:String)
+  implicit val contentListingFormat = jsonFormat1(File)
 }

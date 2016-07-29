@@ -27,13 +27,13 @@ object StatusActor {
   }
 }
 
-class StatusActor extends Actor with ActorLogging {
+class StatusActor(api:GithubWebAPI) extends Actor with ActorLogging {
   implicit val sys = context.system
   implicit val ctx = context.dispatcher
 
   def receive = {
-    case CheckCIStatus(org, proj, sha) => getStatus(org, proj, sha)
-      .map { case s => log.info("" + s); s }
+    case CheckCIStatus(org, proj, sha) => api.getStatus(org, proj, sha)
+      .map { s => log.info("" + s); s }
       .map ( StatusActor.parse )
       .pipeTo(sender())
   }

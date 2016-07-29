@@ -1,15 +1,11 @@
 package git
 
-import GithubWebAPI._
 import GithubWebProtocol.{PR, PRHead}
-import akka.actor.ActorSystem
 import git.StatusActor.{CISuccess, CIStatus, CIFailure}
+import scala.concurrent.Future
 
-import scala.concurrent.{ExecutionContext, Future}
-
-object Autobot {
-  def autoMerge(org:String, proj:String, pr:Int, poll:String => Future[CIStatus])
-               (implicit sys:ActorSystem, ctx:ExecutionContext) = {
+trait Autobot extends GithubWebAPI {
+  def autoMerge(org:String, proj:String, pr:Int, poll:String => Future[CIStatus]) = {
 
     def pollForFailures(sha:String):Future[CIStatus] = poll(sha).flatMap {
       case CIFailure => Future.failed(new Exception(s"CI failed"))

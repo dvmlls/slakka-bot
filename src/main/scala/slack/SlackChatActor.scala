@@ -24,6 +24,7 @@ object SlackChatActor {
   case class MessageReceived(channel:ChannelIdentifier, from:UserIdentifier, message:String, ts:Option[String])
   def mentionPattern(userId:String) = s""".*[<][@]$userId[>][: ]+(.+)""".r
   def mention(userId:String) = s"<@$userId>"
+  case class Start(target:ActorRef)
 }
 
 object MessageMatcher {
@@ -41,7 +42,7 @@ object MessageMatcher {
   }
 }
 
-class SlackChatActor(target:Option[ActorRef] = None)(implicit t:SlackWebAPI.Token) extends Actor with ActorLogging {
+class SlackChatActor(autostart:Boolean = true)(implicit t:SlackWebAPI.Token) extends Actor with ActorLogging {
   implicit val sys = context.system
   implicit val ec = sys.dispatcher
   import SlackChatActor._
@@ -49,17 +50,16 @@ class SlackChatActor(target:Option[ActorRef] = None)(implicit t:SlackWebAPI.Toke
 
   override val supervisorStrategy = OneForOneStrategy() { case _ => Stop }
 
-  def connected(slackClient:ActorRef):Receive = { log.info("state -> connected"); {
-    case Received(MessageMatcher(m)) => target.getOrElse(context.parent) ! m
-    case Disconnected() => context.become(disconnected)
+  def connected(slackClient:ActorRef, target:ActorRef):Receive = { log.info("state -> connected"); {
+    case Received(MessageMatcher(m)) => target ! m
+    case Disconnected() => context.become(disconnected(target))
     case SendMessage(c, m) => slackClient ! Message("message", c, Some(m), None, None).toJson
     case Terminated(who) =>
       log.warning(s"slack client disconnected: $who")
-      context.become(disconnected)
+      context.become(disconnected(target))
   }}
 
-  def disconnected:Receive = {
-    log.info("state -> disconnected")
+  def disconnected(target:ActorRef):Receive = { log.info("state -> disconnected")
     val rtmStart = SlackWebAPI.createPipeline[RTMStart]("rtm.start")
     rtmStart(Map()).pipeTo(self)
 
@@ -67,11 +67,17 @@ class SlackChatActor(target:Option[ActorRef] = None)(implicit t:SlackWebAPI.Toke
       case RTMStart(url, RTMSelf(id, name)) =>
         val slackClient = context.actorOf(Props[WebSocketClient], "wsclient")
         slackClient ! new URI(url)
-        target.getOrElse(context.parent) ! RTMSelf(id, name)
+        target ! RTMSelf(id, name)
         context.watch(slackClient)
-        context.become(connected(slackClient))
+        context.become(connected(slackClient, target))
     }
   }
 
-  def receive = disconnected
+  def waiting:Receive = { log.info("state -> waiting");
+    {
+      case Start(target) => context.become(disconnected(target))
+    }
+  }
+
+  def receive = if (autostart) disconnected(context.parent) else waiting
 }
