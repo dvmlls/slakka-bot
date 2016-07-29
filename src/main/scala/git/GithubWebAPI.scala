@@ -1,10 +1,10 @@
 package git
 
+import scala.concurrent.ExecutionContext
 import akka.actor.ActorSystem
+
 import spray.client.pipelining._
 import spray.httpx.unmarshalling._
-
-import scala.concurrent.ExecutionContext
 import spray.httpx.SprayJsonSupport._
 
 object GithubWebAPI {
