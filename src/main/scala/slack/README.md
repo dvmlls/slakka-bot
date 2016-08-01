@@ -2,7 +2,7 @@
 
 ## Get a Token
 
-Create a bot user, or get your own token.
+Get your own slack token, or create a bot user: https://my.slack.com/services/new/bot 
 
 ## Get the URL for the websocket client
 
