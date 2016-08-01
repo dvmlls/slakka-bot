@@ -22,17 +22,28 @@ This returns a JSON snippet like:
 }
 ```
 
-## Open a WebSocket connection to that URL
+## Open a WebSocket connection to that URL to Listen
 
 This is the Slack Real-Time API ([docs](https://api.slack.com/rtm)).
 
 Among others, you'll get messages ([docs](https://api.slack.com/events/message)) that look like this:
-```
+```json
 {
     "type": "message",
     "channel": "C2147483705",
     "user": "U2147483697",
     "text": "Hello world",
     "ts": "1355517523.000005"
+}
+```
+
+## Chat Back
+
+Send messages over that websocket connection:
+```json
+{
+    "type": "message",
+    "channel": "C2147483705",
+    "text": "Hello world",
 }
 ```
