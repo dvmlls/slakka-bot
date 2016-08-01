@@ -55,4 +55,9 @@ object SlackWebProtocol extends DefaultJsonProtocol with CollectionFormats {
   /* https://api.slack.com/methods/chat.postMessage */
   case class ChatPost(channel:String, ts:String)
   implicit val chatPostFormat = jsonFormat2(ChatPost)
+
+  case class ChannelHistoryItem(`type`:String, user:Option[String], text:Option[String], ts:String)
+  implicit val channelHistoryItemFormat = jsonFormat4(ChannelHistoryItem)
+  case class ChannelHistory(messages:List[ChannelHistoryItem], has_more:Boolean)
+  implicit val channelHistoryFormat = jsonFormat2(ChannelHistory)
 }

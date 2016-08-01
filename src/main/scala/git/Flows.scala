@@ -16,17 +16,17 @@ import StatusActor._
 object GithubFlow extends App {
   val Array(org, proj, heroku, pr) = args
 
-  implicit val system = ActorSystem()
+  implicit val actorSystem = ActorSystem()
   implicit val timeout = new Timeout(15, TimeUnit.MINUTES)
-  implicit val ec = system.dispatcher
+  implicit val ec = actorSystem.dispatcher
 
   object API extends Autobot {
-    override implicit def system: ActorSystem = implicitly
+    override implicit def system: ActorSystem = actorSystem
     override implicit def token: Token = Token(sys.env("GITHUB_TOKEN"))
   }
 
-  val g = system.actorOf(Props[GitActor], "git")
-  val p = system.actorOf(Props { new StatusPoller(API) }, "poller")
+  val g = actorSystem.actorOf(Props[GitActor], "git")
+  val p = actorSystem.actorOf(Props { new StatusPoller(API) }, "poller")
 
   val poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus]
 
@@ -44,11 +44,11 @@ object GithubFlow extends App {
   f.onComplete {
     case Success(s) =>
       System.out.println(s"success: $s")
-      system.shutdown()
+      actorSystem.shutdown()
       sys.exit(0)
     case Failure(ex) =>
       System.err.println(s"failure: $ex")
-      system.shutdown()
+      actorSystem.shutdown()
       sys.exit(1)
   }
 }
@@ -56,17 +56,17 @@ object GithubFlow extends App {
 object GitFlow extends App {
   val Array(org, proj, heroku, pr, jira) = args
 
-  implicit val system = ActorSystem()
+  implicit val actorSystem = ActorSystem()
   implicit val timeout = new Timeout(15, TimeUnit.MINUTES)
-  implicit val ec = system.dispatcher
+  implicit val ec = actorSystem.dispatcher
 
   object API extends Autobot {
-    override implicit def system: ActorSystem = implicitly
+    override implicit def system: ActorSystem = actorSystem
     override implicit def token: Token = Token(sys.env("GITHUB_TOKEN"))
   }
 
-  val g = system.actorOf(Props[GitActor], "git")
-  val p = system.actorOf(Props { new StatusPoller(API) }, "poller")
+  val g = actorSystem.actorOf(Props[GitActor], "git")
+  val p = actorSystem.actorOf(Props { new StatusPoller(API) }, "poller")
 
   val poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus]
 
@@ -87,11 +87,11 @@ object GitFlow extends App {
   f.onComplete {
     case Success(s) =>
       System.out.println(s"success: $s")
-      system.shutdown()
+      actorSystem.shutdown()
       sys.exit(0)
     case Failure(ex) =>
       System.err.println(s"failure: $ex")
-      system.shutdown()
+      actorSystem.shutdown()
       sys.exit(1)
   }
 }
@@ -99,17 +99,17 @@ object GitFlow extends App {
 object AutoMergeBranch extends App {
   val Array(org, proj, branch, prTitle) = args
 
-  implicit val system = ActorSystem()
+  implicit val actorSystem = ActorSystem()
   implicit val timeout = new Timeout(15, TimeUnit.MINUTES)
-  implicit val ec = system.dispatcher
+  implicit val ec = actorSystem.dispatcher
 
   object API extends Autobot {
-    override implicit def system: ActorSystem = implicitly
+    override implicit def system: ActorSystem = actorSystem
     override implicit def token: Token = Token(sys.env("GITHUB_TOKEN"))
   }
 
-  val g = system.actorOf(Props[GitActor])
-  val p = system.actorOf(Props { new StatusPoller(API) }, "poller")
+  val g = actorSystem.actorOf(Props[GitActor])
+  val p = actorSystem.actorOf(Props { new StatusPoller(API) }, "poller")
 
   val poll = (sha:String) => (p ? CheckCIStatus(org, proj, sha)).mapTo[CIStatus]
 
@@ -123,11 +123,11 @@ object AutoMergeBranch extends App {
   f.onComplete {
     case Success(s) =>
       System.out.println(s"success: $s")
-      system.shutdown()
+      actorSystem.shutdown()
       sys.exit(0)
     case Failure(ex) =>
       System.err.println(s"failure: $ex")
-      system.shutdown()
+      actorSystem.shutdown()
       sys.exit(1)
   }
 }
