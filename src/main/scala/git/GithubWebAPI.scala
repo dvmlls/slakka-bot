@@ -18,8 +18,8 @@ trait GithubWebAPI {
   import GithubWebProtocol._
   import GithubWebAPI._
 
+  def token:Token
   implicit def system:ActorSystem
-  implicit def token:Token
   implicit def ec:ExecutionContext = system.dispatcher
 
   val api = "https://api.github.com"

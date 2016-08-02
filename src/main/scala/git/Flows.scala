@@ -22,7 +22,7 @@ object GithubFlow extends App {
 
   object API extends Autobot {
     override implicit def system: ActorSystem = actorSystem
-    override implicit def token: Token = Token(sys.env("GITHUB_TOKEN"))
+    override def token: Token = Token(sys.env("GITHUB_TOKEN"))
   }
 
   val g = actorSystem.actorOf(Props[GitActor], "git")
@@ -62,7 +62,7 @@ object GitFlow extends App {
 
   object API extends Autobot {
     override implicit def system: ActorSystem = actorSystem
-    override implicit def token: Token = Token(sys.env("GITHUB_TOKEN"))
+    override def token: Token = Token(sys.env("GITHUB_TOKEN"))
   }
 
   val g = actorSystem.actorOf(Props[GitActor], "git")
@@ -105,7 +105,7 @@ object AutoMergeBranch extends App {
 
   object API extends Autobot {
     override implicit def system: ActorSystem = actorSystem
-    override implicit def token: Token = Token(sys.env("GITHUB_TOKEN"))
+    override def token: Token = Token(sys.env("GITHUB_TOKEN"))
   }
 
   val g = actorSystem.actorOf(Props[GitActor])
