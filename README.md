@@ -3,6 +3,7 @@
 [![travis status](https://travis-ci.org/dvmlls/slakka-bot.svg?branch=master)](https://travis-ci.org/dvmlls/slakka-bot)
 [![maven central](https://img.shields.io/maven-central/v/cat.dvmlls/slakka-bot_2.11.svg?maxAge=3600)](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22slakka-bot_2.11%22)
 [![Coverage Status](https://img.shields.io/codecov/c/github/dvmlls/slakka-bot/master.svg)](https://codecov.io/github/dvmlls/slakka-bot?branch=master)
+[![Dave](https://img.shields.io/badge/dave-awesome-blue.svg)](http://dvmlls.cat)
 
 Slack chat bot built with akka.  
 
@@ -133,5 +134,5 @@ $ sbt publishSigned && sbt sonatypeRelease
 
 View the project on:
 
-* the SonaType staging area: https://oss.sonatype.org
-* Maven Central: https://search.maven.org 
+* Staging: [Sonatype](https://oss.sonatype.org)
+* Release: [Maven Central](https://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22cat.dvmlls%22%20AND%20a%3A%22slakka-bot_2.11%22)
