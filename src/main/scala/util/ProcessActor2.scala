@@ -67,26 +67,20 @@ class ProcessActor2 extends Actor with ActorLogging {
     }
   }
 
-  def receive = idle
+  def receive:Receive = idle
 }
 
 object Process2Tester extends App {
-  import java.io.File
   import java.util.concurrent.TimeUnit
 
   import akka.actor._
   import akka.util.Timeout
-  import scala.concurrent.Future
-  import scala.io.Source
-  import java.io.OutputStream
-
-  import scala.sys.process.{ProcessIO, ProcessLogger, Process}
 
   import ProcessActor2._
 
   implicit val system = ActorSystem()
-  implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
-  import system.dispatcher
+  val TIMEOUT = 10
+  implicit val timeout = new Timeout(TIMEOUT, TimeUnit.SECONDS)
 
   class Watcher extends Actor with ActorLogging {
     def watching(p:ActorRef):Receive = {
@@ -95,7 +89,7 @@ object Process2Tester extends App {
         sys.exit()
       case a:Any => p ! a
     }
-    def receive = {
+    def receive:Receive = {
       case r:Run =>
         val p = context.actorOf(Props[ProcessActor2])
         context.watch(p)
