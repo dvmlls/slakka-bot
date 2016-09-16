@@ -17,7 +17,7 @@ class ProcessActor extends Actor with ActorLogging {
   import ProcessActor._
   implicit val c = context.dispatcher
 
-  def receive = {
+  def receive:Receive = {
     case Request(workingDirectory, args) =>
       val l = ProcessLogger(sender ! StdOut(_), sender ! StdErr(_))
       val p = Process(args, workingDirectory)
