@@ -1,6 +1,5 @@
 import java.time.Instant
-
-import git.GithubWebProtocol.{IssueComment, PRReviewComment, PRCommit, PR}
+import git.GithubWebProtocol.{IssueComment, PR, PRCommit, PRReviewComment}
 import org.junit.runner.RunWith
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner

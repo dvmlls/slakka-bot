@@ -21,10 +21,10 @@ object SlackWebProtocol extends DefaultJsonProtocol with CollectionFormats {
 
   /* https://api.slack.com/methods/users.list */
   case class Profile(email:Option[String])
-  case class User(id:String, name:String, profile:Profile)
+  case class User(id:String, name:String, real_name:String, profile:Profile)
   case class UserList(members:List[User])
   implicit val profileFormat = jsonFormat1(Profile)
-  implicit val userFormat = jsonFormat3(User)
+  implicit val userFormat = jsonFormat4(User)
   implicit val userListFormat = jsonFormat1(UserList)
 
   /* https://api.slack.com/methods/im.open */
