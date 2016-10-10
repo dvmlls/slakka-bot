@@ -8,7 +8,7 @@ import util.WebSocketClient.Received
 import slack.SlackChatActor
 
 @RunWith(classOf[JUnitRunner])
-class TestParseSlack extends FunSpec {
+class TestSlackRTParsing extends FunSpec {
 
   def parse(s:String):Received = Received(JsonParser(s))
 
