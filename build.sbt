@@ -1,7 +1,9 @@
+val scalaVer = "2.11.8"
+
 lazy val commonSettings = Seq(
   organization := "cat.dvmlls",
   version := "2.10.0",
-  scalaVersion := "2.11.8",
+  scalaVersion := scalaVer,
   sourcesInBase := false,
   scalacOptions ++= Seq("-deprecation", "-feature", "-target:jvm-1.8")
 )
@@ -46,16 +48,10 @@ lazy val dependencies = Seq(
   "junit" % "junit" % "4.12" % "test"
 )
 
-lazy val conflictDependencies = Seq( // to avoid dependency conflict warnings
-  "org.scala-lang" % "scala-reflect" % "2.11.8",
-  "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
-  "org.scala-lang.modules" %% "scala-xml" % "1.0.4"
-)
-
 lazy val root = (project in file(".")).
   settings(commonSettings: _*).
   settings(publishSettings: _*).
   settings(
     name := "slakka-bot",
-    libraryDependencies ++= conflictDependencies ++ dependencies
+    libraryDependencies ++= dependencies
   )
