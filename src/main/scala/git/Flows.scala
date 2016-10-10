@@ -44,11 +44,11 @@ object GithubFlow extends App {
   f.onComplete {
     case Success(s) =>
       System.out.println(s"success: $s")
-      actorSystem.shutdown()
+      actorSystem.terminate()
       sys.exit(0)
     case Failure(ex) =>
       System.err.println(s"failure: $ex")
-      actorSystem.shutdown()
+      actorSystem.terminate()
       sys.exit(1)
   }
 }
@@ -87,11 +87,11 @@ object GitFlow extends App {
   f.onComplete {
     case Success(s) =>
       System.out.println(s"success: $s")
-      actorSystem.shutdown()
+      actorSystem.terminate()
       sys.exit(0)
     case Failure(ex) =>
       System.err.println(s"failure: $ex")
-      actorSystem.shutdown()
+      actorSystem.terminate()
       sys.exit(1)
   }
 }
@@ -123,11 +123,11 @@ object AutoMergeBranch extends App {
   f.onComplete {
     case Success(s) =>
       System.out.println(s"success: $s")
-      actorSystem.shutdown()
+      actorSystem.terminate()
       sys.exit(0)
     case Failure(ex) =>
       System.err.println(s"failure: $ex")
-      actorSystem.shutdown()
+      actorSystem.terminate()
       sys.exit(1)
   }
 }
