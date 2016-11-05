@@ -10,14 +10,16 @@ import slack.SlackWebProtocol.RTMSelf
 import slack._
 import slack.UserService.{UserId, UserName}
 
+import scala.concurrent.ExecutionContext
+
 sealed trait ChatType
-case class IM(username:String) extends ChatType
-case class Channel(name:String) extends ChatType
-case class Chat(t:ChatType, message:String)
+final case class IM(username:String) extends ChatType
+final case class Channel(name:String) extends ChatType
+final case class Chat(t:ChatType, message:String)
 
 class EchoBot()(implicit t:SlackWebAPI.Token, to:Timeout) extends Actor with ActorLogging {
 
-  implicit val ec = context.system.dispatcher
+  implicit val ec:ExecutionContext = context.system.dispatcher
 
   val slack = context.actorOf(Props { new SlackChatActor() }, "slack")
   val ims = context.actorOf(Props { new IMService() }, "ims")
@@ -51,5 +53,5 @@ class EchoBot()(implicit t:SlackWebAPI.Token, to:Timeout) extends Actor with Act
 
   def receive:Receive = { log.info("state -> disconnected"); {
     case RTMSelf(id, name) => context.become(connected(id, name))
-  }}
+  } }
 }

@@ -7,8 +7,7 @@ import slack.SlackChatActor.{MessageReceived, SendMessage}
 import slack.UserService.UserId
 import slack._
 import slack.SlackWebProtocol._
-import util.ProcessActor2
-import util.ProcessActor2._
+import util.ProcessActor._
 
 implicit val system = ActorSystem()
 implicit val timeout = new Timeout(10, TimeUnit.SECONDS)
@@ -31,8 +30,8 @@ class SingleParse extends Actor with ActorLogging {
 
     log.info(s"parsing: channelId=$channelId input=$input")
 
-    val process = context.actorOf(Props[ProcessActor2])
-    process ! ProcessActor2.Run(List("syntaxnet/demo.sh"), Some(new File(path)))
+    val process = context.actorOf(Props[ProcessActor])
+    process ! ProcessActor.Run(List("syntaxnet/demo.sh"), Some(new File(path)))
     process ! WriteLine(input)
     process ! Close()
 

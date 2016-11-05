@@ -32,7 +32,7 @@ class GitActor extends Actor with ActorLogging {
   }}
 
   def simpleTask(repo:File, command:Seq[String]): Unit = {
-    processor ! Request(repo, command)
+    processor ! Run(command, Some(repo))
     context.become(working(sender(), s"failed: $command"), discardOld=false)
   }
 
@@ -57,7 +57,7 @@ class GitActor extends Actor with ActorLogging {
     case CloneRepo(org, proj) =>
       Try { Files.createTempDirectory("repo").toFile } match {
         case Success(parent) =>
-          processor ! Request(parent, s"git clone git@github.com:$org/$proj.git")
+          processor ! Run(s"git clone git@github.com:$org/$proj.git", Some(parent))
           context.become(cloning(org, proj, sender(), new File(parent, proj)), discardOld = false)
         case Failure(ex) => sender() ! Status.Failure(ex)
       }

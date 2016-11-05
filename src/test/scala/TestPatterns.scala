@@ -11,7 +11,7 @@ class TestPatterns extends FunSpec {
       .foreach(s => {
         it("question: " + s) {
           s match {
-            case SwarmPattern(_, s2) => println(s2)
+            case SwarmPattern(_, s2) => // ok
             case _ => fail("did not match: " + s)
           }
         }
@@ -23,7 +23,7 @@ class TestPatterns extends FunSpec {
       .foreach(s => {
         it("stock: " + s) {
           s match {
-            case TickerPattern(s2,a) => println(s"tick=$s2 ex=$a")
+            case TickerPattern(s2,a) => // ok
             case _ => fail("did not match: " + s)
           }
         }

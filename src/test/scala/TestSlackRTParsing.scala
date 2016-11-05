@@ -17,7 +17,7 @@ class TestSlackRTParsing extends FunSpec {
     it("isn't a message") {
       intercept[MatchError] {
         parse(s) match {
-          case Received(MessageMatcher(MessageReceived(_, _, message, _))) => println(message)
+          case Received(MessageMatcher(MessageReceived(_, _, message, _))) => fail(s)
         }
       }
     }
@@ -28,7 +28,7 @@ class TestSlackRTParsing extends FunSpec {
     it("isn't a message") {
       intercept[MatchError] {
         parse(s) match {
-          case Received(MessageMatcher(MessageReceived(_, _, message, _))) => println(message)
+          case Received(MessageMatcher(MessageReceived(_, _, message, _))) => fail(s)
         }
       }
     }
@@ -64,7 +64,7 @@ class TestSlackRTParsing extends FunSpec {
       val Mention = SlackChatActor.mentionPattern(myUserId)
       intercept[MatchError] {
         parse(s) match {
-          case Received(MessageMatcher(MessageReceived(_, _, Mention(message), _))) => println(message)
+          case Received(MessageMatcher(MessageReceived(_, _, Mention(message), _))) => fail(s)
         }
       }
     }
@@ -76,7 +76,7 @@ class TestSlackRTParsing extends FunSpec {
     it("aren't actually messages") {
       intercept[MatchError] {
         parse(s) match {
-          case Received(MessageMatcher(MessageReceived(_, _, message, _))) => println(message)
+          case Received(MessageMatcher(MessageReceived(_, _, message, _))) => fail(s)
         }
       }
     }
@@ -88,7 +88,7 @@ class TestSlackRTParsing extends FunSpec {
     it("aren't messages") {
       intercept[MatchError] {
         parse(s) match {
-          case Received(MessageMatcher(MessageReceived(_, _, message, _))) => println(message)
+          case Received(MessageMatcher(MessageReceived(_, _, message, _))) => fail(s)
         }
       }
     }

@@ -1,13 +1,13 @@
 package bots
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
-import akka.pattern.pipe
-
+import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill}
 import git.GithubWebAPI
 import slack.ChannelService.ChannelId
 import slack.SlackChatActor.{MessageReceived, SendMessage}
 import slack.SlackWebAPI
 import slack.SlackWebProtocol.{EmojiList, RTMSelf}
+
+import scala.util.{Failure, Success}
 
 object SwarmBot {
   val SwarmPattern = """(?i).*(unleash|release) the ([a-z0-9_-]+)s""".r
@@ -49,7 +49,12 @@ class SwarmBot(slack:ActorRef, api:GithubWebAPI)(implicit val t:SlackWebAPI.Toke
       Emojis(custom.emoji.keySet ++ b.toSet)
     }
 
-    f.pipeTo(self)
+    f.onComplete {
+      case Success(emojis) => self ! emojis
+      case Failure(ex) =>
+        log.error(ex, "failure getting emojis")
+        self ! PoisonPill
+    }
 
     {
       case Emojis(emojis) => context.become(connected(emojis))

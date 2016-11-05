@@ -18,7 +18,7 @@ class ShellBot(authorized:List[String])(implicit to:Timeout) extends Actor with 
 
   throttle ! slack
 
-  import util.ProcessActor2._
+  import util.ProcessActor._
 
   def running(process:ActorRef, desiredUsername:String, desiredChannelId:String):Receive = { log.info("state -> running"); {
     case m @ MessageReceived(ChannelId(channelId), UserName(username), message, _) if desiredUsername == username && channelId == desiredChannelId =>
@@ -31,7 +31,7 @@ class ShellBot(authorized:List[String])(implicit to:Timeout) extends Actor with 
     case Status.Failure(ex) =>
       slack ! SendMessage(desiredChannelId, s"_process exited abnormally: `$ex`_")
       context.unbecome()
-  }}
+  }:Receive }
 
   def resolveUser:Receive = {
     case m @ MessageReceived(channelId, UserId(userId), message, _) if message.trim().length > 0 =>
@@ -45,13 +45,13 @@ class ShellBot(authorized:List[String])(implicit to:Timeout) extends Actor with 
 
     {
       case m @ MessageReceived(ChannelId(channelId), UserName(username), Mention(message), _) if authorized.contains(username) =>
-        val process = context.actorOf(Props[util.ProcessActor2])
+        val process = context.actorOf(Props[util.ProcessActor])
         context.become(running(process, username, channelId) orElse resolveUser, discardOld = false)
         process ! Run(message)
-    }
+    }:Receive
   }
 
   def receive:Receive = { log.info("state -> disconnected"); {
     case RTMSelf(id, name) => context.become(connected(id, name) orElse resolveUser)
-  }}
+  }:Receive }
 }

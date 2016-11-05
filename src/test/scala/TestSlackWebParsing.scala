@@ -21,6 +21,6 @@ class TestSlackWebParsing extends FunSpec {
 
     it ("has a name") { assert(member.name === "bobby") }
     it ("has an email") { assert(member.profile.email === Some("bobby@slack.com")) }
-    it ("has a full name") { assert(member.real_name === "Bobby Tables") }
+    it ("has a full name") { assert(member.real_name === Some("Bobby Tables")) }
   }
 }
