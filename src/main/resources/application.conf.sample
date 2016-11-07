@@ -1,0 +1,8 @@
+amy {
+  slack {
+    token = ""
+  }
+  github {
+    token = ""
+  }
+}

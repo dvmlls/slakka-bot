@@ -52,7 +52,7 @@ class SlackChatActor(autostart:Boolean = true)(implicit t:SlackWebAPI.Token) ext
 
   def connected(slackClient:ActorRef, target:ActorRef):Receive = { log.info("state -> connected"); {
     case Received(MessageMatcher(m)) => target ! m
-    case Disconnected() => context.become(disconnected(target))
+    case Disconnected => context.become(disconnected(target))
     case SendMessage(c, m) => slackClient ! Message("message", c, Some(m), None, None).toJson
     case Terminated(who) =>
       log.warning(s"slack client disconnected: $who")

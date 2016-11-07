@@ -34,12 +34,15 @@ lazy val publishSettings = Seq(
     </developers>
 )
 
+val akkaVer = "2.4.12"
+
 lazy val dependencies = Seq(
   "io.spray" %% "spray-can" % "1.3.4",
   "io.spray" %% "spray-client" % "1.3.4",
   "io.spray" %% "spray-json" % "1.3.2",
-  "com.typesafe.akka" %% "akka-actor" % "2.4.11",
-  "com.typesafe.akka" %% "akka-slf4j" % "2.4.11",
+  "com.typesafe.akka" %% "akka-actor" % akkaVer,
+  "com.typesafe.akka" %% "akka-slf4j" % akkaVer,
+  "com.typesafe.akka" %% "akka-stream" % akkaVer,
   "javax.websocket" % "javax.websocket-api" % "1.1",
   "org.glassfish.tyrus" % "tyrus-client" % "1.12",
   "org.glassfish.tyrus" % "tyrus-container-grizzly-client" % "1.12",
