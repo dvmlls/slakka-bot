@@ -1,28 +1,31 @@
 package slack
 
 import java.net.URI
+
 import akka.actor._
 import akka.pattern.pipe
 import akka.actor.SupervisorStrategy.Stop
-import spray.json.{CollectionFormats, DefaultJsonProtocol, JsValue}
+import spray.json.{CollectionFormats, DefaultJsonProtocol, JsValue, RootJsonFormat}
 import slack.ChannelService.{ChannelId, ChannelIdentifier}
 import slack.SlackWebProtocol.{RTMSelf, RTMStart}
 import slack.UserService.{UserId, UserIdentifier}
 import util.WebSocketClient
 import util.WebSocketClient.{Disconnected, Received}
 
+import scala.util.matching.Regex
+
 object SlackRTProtocol extends DefaultJsonProtocol with CollectionFormats {
   case class Base(`type`:Option[String])
-  implicit val baseFormat = jsonFormat1(Base)
+  implicit val baseFormat: RootJsonFormat[Base] = jsonFormat1(Base)
 
   case class Message(`type`:String, channel:String, text:Option[String], user:Option[String], ts:Option[String])
-  implicit val messageFormat = jsonFormat5(Message)
+  implicit val messageFormat: RootJsonFormat[Message] = jsonFormat5(Message)
 }
 
 object SlackChatActor {
   case class SendMessage(channel:String, message:String)
   case class MessageReceived(channel:ChannelIdentifier, from:UserIdentifier, message:String, ts:Option[String])
-  def mentionPattern(userId:String) = s""".*[<][@]$userId[>][: ]+(.+)""".r
+  def mentionPattern(userId:String): Regex = s""".*[<][@]$userId[>][: ]+(.+)""".r
   def mention(userId:String) = s"<@$userId>"
   case class Start(target:ActorRef)
 }
@@ -43,12 +46,12 @@ object MessageMatcher {
 }
 
 class SlackChatActor(autostart:Boolean = true)(implicit t:SlackWebAPI.Token) extends Actor with ActorLogging {
-  implicit val sys = context.system
-  implicit val ec = sys.dispatcher
+  private[this] implicit val sys = context.system
+  private[this] implicit val ec = sys.dispatcher
   import SlackChatActor._
   import SlackRTProtocol._
 
-  override val supervisorStrategy = OneForOneStrategy() { case _ => Stop }
+  override val supervisorStrategy: SupervisorStrategy = OneForOneStrategy() { case _ => Stop }
 
   def connected(slackClient:ActorRef, target:ActorRef):Receive = { log.info("state -> connected"); {
     case Received(MessageMatcher(m)) => target ! m
@@ -70,6 +73,7 @@ class SlackChatActor(autostart:Boolean = true)(implicit t:SlackWebAPI.Token) ext
         target ! RTMSelf(id, name)
         context.watch(slackClient)
         context.become(connected(slackClient, target))
+      case Status.Failure(ex) => throw new Exception("error starting up - have you specified your slack token?", ex)
     }
   }
 
@@ -79,5 +83,5 @@ class SlackChatActor(autostart:Boolean = true)(implicit t:SlackWebAPI.Token) ext
     }
   }
 
-  def receive = if (autostart) disconnected(context.parent) else waiting
+  def receive:Receive = if (autostart) disconnected(context.parent) else waiting
 }

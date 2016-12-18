@@ -2,28 +2,27 @@ package bots
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.pattern.pipe
-
 import git.GithubWebAPI
 import slack.ChannelService.ChannelId
 import slack.SlackChatActor.{MessageReceived, SendMessage}
 import slack.SlackWebAPI
 import slack.SlackWebProtocol.{EmojiList, RTMSelf}
 
+import scala.util.matching.Regex
+
 object SwarmBot {
-  val SwarmPattern = """(?i).*(unleash|release) the ([a-z0-9_-]+)s""".r
+  val SwarmPattern: Regex = """(?i).*(unleash|release) the ([a-z0-9_-]+)s""".r
 }
 
 class SwarmBot(slack:ActorRef, api:GithubWebAPI)(implicit val t:SlackWebAPI.Token) extends Actor with ActorLogging {
-  implicit val ec = context.dispatcher
-  implicit val sys = context.system
+  private[this] implicit val ec = context.dispatcher
+  private[this] implicit val sys = context.system
   import SwarmBot.SwarmPattern
 
-  def connected(emojis:Set[String]):Receive = { log.info("state -> connected")
-
-    log.info("emoji: " + emojis.toList.sorted.mkString(", "))
+  def connected(emojis:Set[String]):Receive = { log.info("state -> connected \n emoji: " + emojis.toList.sorted.mkString(", "))
 
     {
-      case MessageReceived(ChannelId(channelId), _, SwarmPattern(_, emoji), Some(ts)) if emojis.contains(emoji.toLowerCase) =>
+      case MessageReceived(ChannelId(channelId), _, SwarmPattern(_, emoji), _) if emojis.contains(emoji.toLowerCase) =>
         slack ! SendMessage(channelId, s":${emoji.toLowerCase()}: " * 100)
     }
   }
@@ -38,13 +37,13 @@ class SwarmBot(slack:ActorRef, api:GithubWebAPI)(implicit val t:SlackWebAPI.Toke
 
     val f = for (
       custom <- pipeline(Map());
-      built_ins <- api.listContents("WebpageFX", "emoji-cheat-sheet.com", "public/graphics/emojis")
+      builtIns <- api.listContents("WebpageFX", "emoji-cheat-sheet.com", "public/graphics/emojis")
     ) yield {
 
-      val b = built_ins.flatMap(_.name match {
+      val b = builtIns.flatMap { _.name match { // collect?
         case Pattern(s) => Some(s)
         case _ => None
-      })
+      }}
 
       Emojis(custom.emoji.keySet ++ b.toSet)
     }
