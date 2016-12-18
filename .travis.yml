@@ -6,7 +6,6 @@ scala:
 
 env:
 - JDK=oraclejdk8
-- JDK=openjdk8
 - JDK=oraclejdk7
 - JDK=openjdk7
 
