@@ -2,12 +2,11 @@ language: scala
 
 scala:
   - 2.11.8
-  - 2.12.1
+#  - 2.12.1 # spray not available yet
 
 env:
 - JDK=oraclejdk8
-- JDK=oraclejdk7
-- JDK=openjdk7
+#- JDK=oraclejdk7 # can't use java 7 because of time api
 
 before_script:
   - jdk_switcher use $JDK
@@ -17,10 +16,8 @@ script: sbt ++$TRAVIS_SCALA_VERSION clean coverage test scalastyle
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 
-matrix:
-  # scala 2.12 requires java 8
-  exclude:
-    - scala: 2.12.1
-      env: JDK=oraclejdk7
-    - scala: 2.12.1
-      env: JDK=openjdk7
+#matrix:
+#  # scala 2.12 requires java 8
+#  exclude:
+#    - scala: 2.12.1
+#      env: JDK=oraclejdk7
