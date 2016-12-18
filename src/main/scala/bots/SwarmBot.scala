@@ -52,7 +52,12 @@ class SwarmBot(slack:ActorRef, api:GithubWebAPI)(implicit val t:SlackWebAPI.Toke
 
     {
       case Emojis(emojis) => context.become(connected(emojis))
-      case Status.Failure(ex) => throw new Exception("error starting up - have you specified your slack token?", ex)
+      case Status.Failure(ex) =>
+        /*
+         *  TODO: if this happens and the supervision strategy is RESTART, need a way to re-send this actor his
+         *        startup parameters so he doesn't get stuck in the "disconnected" state
+         */
+        throw new Exception("error starting up - have you specified your slack token?", ex)
     }
   }
 
