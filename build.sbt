@@ -2,7 +2,7 @@ val scalaVer = "2.11.8"
 
 lazy val commonSettings = Seq(
   organization := "cat.dvmlls",
-  version := "2.10.0",
+  version := "2.11.0",
   scalaVersion := scalaVer,
   sourcesInBase := false,
   scalacOptions ++= Seq("-deprecation", "-feature", "-target:jvm-1.8")
