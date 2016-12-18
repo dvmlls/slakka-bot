@@ -1,6 +1,6 @@
 package bots
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef, Status}
 import akka.pattern.pipe
 import git.GithubWebAPI
 import slack.ChannelService.ChannelId
@@ -52,6 +52,7 @@ class SwarmBot(slack:ActorRef, api:GithubWebAPI)(implicit val t:SlackWebAPI.Toke
 
     {
       case Emojis(emojis) => context.become(connected(emojis))
+      case Status.Failure(ex) => throw new Exception("error starting up - have you specified your slack token?", ex)
     }
   }
 
